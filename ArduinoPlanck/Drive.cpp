@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Drive.h
+// Drive.cpp
 //-----------------------------------------------------------------------------
 // Let op: deze file heeft als extensie .h, maar bevat ook code en is eigenlijk
 //         een combinatie van een .h en een .cpp file. Dit is (lijkt) de 
@@ -39,59 +39,7 @@
 // je een volgende beweging start. 
 //
 //-----------------------------------------------------------------------------
-
-
-// Constante per bewegingstype (DriveMode) die we ondersteunen.
-enum TDiveMode { UNDEFINED, M_POWER, M_SPEED_LR, M_SPEED_HEADING, M_XY, M_ROTATE, M_ARC, M_STOP };
-
-
-class TDrive
-{
-   public:
-
-      TDrive();
-      void Takt();
-      bool IsDone();
-      
-      // bewegingen
-      void Power(int PowerL, int PowerR);
-      void SpeedLR(int SpeedL, int SpeedR);
-      void SpeedHeading(int Speed, int Heading);
-      void XY(int X, int Y, int Speed, int EndSpeed);
-      void Rotate(int Heading);
-      void Arc(int Heading, int Radius, int Speed, int EndSpeed);
-      void Stop();
-
-
-      int SollSpeedL, SollSpeedR; // Snelheid (in mm/sec) die we nastreven, verandering begrensd door MaxSlope     
-            
-   private:
-
-      // private vars
-      TDiveMode DriveMode;    // actief type aansturing
-      int Param1;             // Paramers van actieve aansturing type
-      int Param2;
-      int Param3;
-      int Param4;
-
-      bool IsDoneFlag;        // Movement is gereed
-      bool NewMovement;
-
-      int MaxSlope;
-
-
-      // private methods
-      void UpdateSpeedSP(int InSpeedL, int InSpeedR, int MaxSlopeP);
-
-      void SpeedLRTakt(bool FirstCall, int SpeedL, int SpeedR, int MaxSlopeP);        
-      bool SpeedHeadingTakt(bool FirstCall, int InSpeed, int InHeading);
-      bool XYTakt(bool FirstCall, int TargetX, int TargetY, int Speed, int EndSpeed);     
-      bool RotateTakt(bool FirstCall, int InHeading);           
-      bool ArcTakt(bool FirstCall, int Heading, int Radius, int Speed, int EndSpeed);
-      bool StopTakt(bool FirstCall);
-      
-}; 
-
+#include "MyRobot.h"
 
 //-----------------------------------------------------------------------------
 // TDrive - constructor
@@ -114,6 +62,7 @@ void TDrive::Takt()
             
       if (NewMovement) {    
          // gewijzigde drive mode => diverse init's
+         printf("Drive.NewMovement => misc inits\n");
          FirstCall = true;
          
          SollSpeedL = ACT_SPEED_MM_SEC(Position.ActSpeedL);
@@ -168,8 +117,6 @@ void TDrive::Takt()
          }
       }
    }
-
-
    
 //----------------------------------------------------------------------------- 
 // IsDone - return true als beweging klaar is.
@@ -180,7 +127,6 @@ bool TDrive::IsDone()
       return IsDoneFlag;
    }
 
-
 //----------------------------------------------------------------------------- 
 // Power - rij met gegeven pwm waarden (L, R)
 //-----------------------------------------------------------------------------  
@@ -188,11 +134,15 @@ bool TDrive::IsDone()
 //-----------------------------------------------------------------------------
 void TDrive::Power(int PowerL, int PowerR)
    {    
+      if (DriveMode != M_POWER) {
+        printf("Drive.Power\n");
+        NewMovement = true;  
+      }
+
       DriveMode = M_POWER;
       Param1 = PowerL;
       Param2 = PowerR;     
 
-      NewMovement = true;  
       IsDoneFlag = false;
    }       
 
@@ -201,12 +151,16 @@ void TDrive::Power(int PowerL, int PowerR)
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void TDrive::SpeedLR(int SpeedL, int SpeedR)
-   {    
+   {   
+      if (DriveMode != M_SPEED_LR) {
+        printf("Drive.SpeedLR\n");
+        NewMovement = true;  
+      }
+      
       DriveMode = M_SPEED_LR;
       Param1 = SpeedL;
       Param2 = SpeedR;                   
       
-      NewMovement = true;  
       IsDoneFlag = false;
    }       
 
@@ -216,6 +170,8 @@ void TDrive::SpeedLR(int SpeedL, int SpeedR)
 //-----------------------------------------------------------------------------
 void TDrive::SpeedHeading(int Speed, int Heading)
    {    
+      printf("Drive.SpeedHeading\n");
+
       DriveMode = M_SPEED_HEADING;
       Param1 = Speed;
       Param2 = Heading;       
@@ -229,7 +185,7 @@ void TDrive::SpeedHeading(int Speed, int Heading)
 //-----------------------------------------------------------------------------
 void TDrive::XY(int X, int Y, int Speed, int EndSpeed)
    {
-      printf("Driver M_XY  x: %d, y: %d, Speed: %d, EndSpeed: %d\n",
+      printf("Drive.XY  x: %d, y: %d, Speed: %d, EndSpeed: %d\n",
             X, Y, Speed, EndSpeed);    
             
       DriveMode = M_XY;
@@ -252,6 +208,8 @@ void TDrive::XY(int X, int Y, int Speed, int EndSpeed)
 //-----------------------------------------------------------------------------
 void TDrive::Rotate(int Heading)
    {
+      printf("Drive.Rotate\n");
+
       DriveMode = M_ROTATE;
       Param1 = Heading;
 
@@ -265,6 +223,8 @@ void TDrive::Rotate(int Heading)
 //-----------------------------------------------------------------------------
 void TDrive::Stop()
    {
+      printf("Drive.Stop\n");
+
       DriveMode = M_STOP;
 
       NewMovement = true;  
@@ -280,6 +240,8 @@ void TDrive::Stop()
 //-----------------------------------------------------------------------------
 void TDrive::Arc(int Heading, int Radius, int Speed, int EndSpeed)
    {
+      printf("Drive.Arc\n");
+
       DriveMode = M_ARC;
       Param1 = Heading;
       Param2 = Radius;
@@ -317,6 +279,7 @@ void TDrive::UpdateSpeedSP(int InSpeedL, int InSpeedR, int MaxSlopeP)
    {
       Slope(SollSpeedL, InSpeedL, MaxSlopeP);
       Slope(SollSpeedR, InSpeedR, MaxSlopeP);
+      printf("@@ %d %d %d\n", SollSpeedL, InSpeedL, MaxSlopeP);
    }
 
 //-----------------------------------------------------------------------------
@@ -385,7 +348,6 @@ bool TDrive::RotateTakt(bool FirstCall, int InHeading)
 bool TDrive::SpeedHeadingTakt(bool FirstCall, int InSpeed, int InHeading)
    {  int SetSpeedL, SetSpeedR;
       static int SpeedSp = 0;
-
 
       // slope input speed
       if (FirstCall) {
@@ -524,7 +486,7 @@ bool TDrive::ArcTakt(bool FirstCall, int Heading, int Radius, int Speed, int End
       static float TurnRate;
 
       int OdoL, OdoR, OdoT;  // afgelegde weg in mm 
-      Position.OdoGet(&OdoL, &OdoR, &OdoT);
+      Position.OdoGet(OdoL, OdoR, OdoT);
 
       if (FirstCall) {
          // bepaal

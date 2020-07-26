@@ -2,6 +2,7 @@
 // Motors_TB6612.ino  - HL aansturing van de RedBot motors (hard, push-pull)
 //                    TB6612 chip direct aangesloten
 //-----------------------------------------------------------------------------
+#include "MyRobot.h"
 
 //-----------------------------------------------------------------------------
 // SetupMotors_HL - Stel IO in voor aansturing motoren (harde aansturing)
@@ -25,7 +26,7 @@ void MotorsSetup_TB6612()
 //  setPwmFrequency(TB6612_PWML, 4);  // set PWM to 62500/n
 //TCCR1B = (TCCR1B & 0b11111000) | 1;  // 2 is delen door 8 - dit is voor pwm op 11/l2, is nu 44/45
 
-   TCCR5B = (TCCR5B & 0b11111000) | 1;  // 2 is delen door 8 - dit is voor pwm op 11/l2, is nu 44/45
+  TCCR5B = (TCCR5B & 0b11111000) | 1;  // 2 is delen door 8 - dit is voor pwm op 11/l2, is nu 44/45
 
 }
 

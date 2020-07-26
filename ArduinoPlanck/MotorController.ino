@@ -27,6 +27,8 @@ void MotorController(int SetpointL, int SetpointR)
    volatile int SetpointL_Ticks = (SetpointL * 4L * MAIN_TAKT_INTERVAL) / ODO_TICK_TO_METRIC;
    volatile int SetpointR_Ticks = (SetpointR * 4L * MAIN_TAKT_INTERVAL) / ODO_TICK_TO_METRIC;
 
+  //printf("!! %d %d %d %d\n", SetpointL, SetpointL_Ticks, MAIN_TAKT_INTERVAL, ODO_TICK_TO_METRIC);
+
    if (SetpointL_Ticks != 0) {
       //  PID motor speed control:
       PError = SetpointL_Ticks - Position.ActSpeedL;     // P fout, in odo-pulsen per takt-inteval
@@ -52,7 +54,7 @@ void MotorController(int SetpointL, int SetpointR)
       PowerL     = 0;
    }
 
-   printf("PID_L Perr %d, Ierr %d, Derr %d, Soll %d, Act: %d\n", PError, Mc.IErrorL, DError, SetpointL_Ticks, Position.ActSpeedL);
+   //printf("PID_L Perr %d, Ierr %d, Derr %d, Soll %d, Act: %d\n", PError, Mc.IErrorL, DError, SetpointL_Ticks, Position.ActSpeedL);
 
    if (SetpointR_Ticks != 0) {
       //  PID motor speed control:

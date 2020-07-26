@@ -15,20 +15,12 @@ int ProgrammaParam1;
 void ProgrammaTakt()
 {
    static int State, PrevState = -1;
-   bool NewState = false;
-
-   // rapporteer status bij state overgang
-   if (PrevState != State) {
-      PrevState = State;
-      printf("Programma: %d\n", State);
-      NewState = true;
-   }
 
    char ch = PfKeyGet();
    if (ch) {
       // knop ingedrukt
 
-      //      printf("Key: %d\n", ch);
+      printf("Key: %d\n", ch);
       if (ch == -1) {
          State = 0;           // reset, stop lopend programma / programma 'stilstaan'.
       } else {
@@ -37,6 +29,15 @@ void ProgrammaTakt()
          }
       }
    }
+
+   // rapporteer status bij state overgang
+   bool NewState = false;
+   if (PrevState != State) {
+      PrevState = State;
+      printf("Programma: %d\n", State);
+      NewState = true;
+   }
+
 
    // Roep actieve programma 1 t/m 12  aan.
    switch(State) {
@@ -63,6 +64,11 @@ void ProgrammaTakt()
          break;
       }
 
+      case 4 : { // Programma: speed
+         Driver.SpeedLR(50, -50);
+         break;
+      }
+
       case 5 : { // Programma: UmbMark CCW           
          if (NewState) {
             ProgrammaParam1 = 1;      // set CCW
@@ -82,6 +88,15 @@ void ProgrammaTakt()
          }
          break;
       }
+
+      case 8 : { // Programma: UmbMark CW 
+         if (DetectBlikTakt(NewState)) { // call StateMachine                             
+            State = 0;                 // Statemachine returns true => program done.    
+         }
+         break;
+      }
+
+
 
       case 9 : { // Programma: Heen en Weer                   
          if (NewState) {
@@ -304,17 +319,20 @@ bool HeenEnWeerTakt(bool Init)
    if (PrevState != State) {
       PrevState = State;
       NewState = true;
-      printf("TTijd state %d\n", State);
+      printf("HW state %d\n", State);
    }
 
-   printf("hw %d %d %d\n", State, Driver.SollSpeedL, Driver.SollSpeedR);
+   printf("hw %d %d %d %d %d\n", State, Driver.SollSpeedL, Driver.SollSpeedR, UsDistance, SharpRechts);
             
    switch (State) { 
-      case 0 :    // Volg wand naar vak B 
-            x = (200 - SharpRechts)/10;  // wand volgen            
+      case 0 :    // Volg wand naar vak B   
+            if (NewState) {
+               Position.Reset();    
+            }
+            x = (250 - SharpRechts)/10;  // wand volgen            
             Driver.SpeedHeading(HW_SNELHEID, x);  // Speed, Heading
 
-            if (SharpVoor < 400) { // Als we de wand voor ons zien
+            if (UsDistance < 500) { // Als we de wand voor ons zien
                State++; // naar volgende state       
             }
          break;               
@@ -350,13 +368,22 @@ bool HeenEnWeerTakt(bool Init)
          break;               
 
       case 4 :    // Terug naar startpunt
+            x = 180 + (SharpLinks - 250)/10;  // wand volgen            
+            Driver.SpeedHeading(HW_SNELHEID, x);  // Speed, Heading
+
+            if (UsDistance < 500) { // Als we de wand voor ons zien
+               State++; // naar volgende state       
+            }
+         break;               
+
+      case 5 :    // Stop
             if (NewState) {
                // voor het eerst in deze state
-               Driver.XY(0, 0, 600, 0); // Heading (in graden)
+               Driver.Stop(); 
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               return true; // done
-            }         
+               State++; // naar volgende state
+            }
          break;               
                                                 
       default :   // error
@@ -390,7 +417,7 @@ bool TTijdTakt(bool Init)
             x = (200 - SharpRechts)/10;  // wand volgen            
             Driver.SpeedHeading(TT_SNELHEID, x);  // Speed, Heading
 
-            if (SharpVoor < 300) { // Als we de wand voor ons zien
+            if (SharpLinks < 300) { // Als we de wand voor ons zien
                State++; // naar volgende state       
             }
          break;               
@@ -420,7 +447,7 @@ bool TTijdTakt(bool Init)
             Driver.SpeedHeading(TT_SNELHEID, x + 90);  // Speed, Heading
             printf("SharpRechts: %d\n", SharpRechts);
 
-            if (SharpVoor < 300) { // Als we de wand voor ons zien
+            if (SharpLinks < 300) { // Als we de wand voor ons zien
                State++; // naar volgende state       
             }
          break;               
@@ -481,7 +508,7 @@ bool TTijdTakt(bool Init)
             Driver.SpeedHeading(TT_SNELHEID, x + 90);  // Speed, Heading
             printf("Sharp: %d, x: %d\n", SharpRechts, x);
 
-            if (SharpVoor < 300) { // Als we de wand voor ons zien
+            if (SharpLinks < 300) { // Als we de wand voor ons zien
                State++; // naar volgende state       
             }         
          break;               
@@ -510,7 +537,7 @@ bool TTijdTakt(bool Init)
             x = (200 - SharpRechts)/10;  // wand volgen            
             Driver.SpeedHeading(TT_SNELHEID, x + 180);  // Speed, Heading
 
-            if (SharpVoor < 300) { // Als we de wand voor ons zien
+            if (SharpLinks < 300) { // Als we de wand voor ons zien
                State++; // naar volgende state       
             }         
          break;               
@@ -570,7 +597,7 @@ bool TTijdTakt(bool Init)
             x = (200 - SharpRechts)/10;  // wand volgen            
             Driver.SpeedHeading(TT_SNELHEID, x + 180);  // Speed, Heading
 
-            if (SharpVoor < 300) { // Als we de wand voor ons zien
+            if (SharpLinks < 300) { // Als we de wand voor ons zien
                return true; // done
             }         
          break;               
@@ -591,3 +618,166 @@ bool TTijdTakt(bool Init)
    }           
    return false;  // mission nog niet gereed
 } 
+
+
+
+
+//-----------------------------------------------------------------------------
+// DetectBlikTakt - 
+//-----------------------------------------------------------------------------                      
+//-----------------------------------------------------------------------------
+bool DetectBlikTakt(bool Init)
+{  static int State, PrevState;
+   bool NewState = false;
+   static int Afstanden[90];  
+   static int Target;
+
+   static int StartRobotHoek;
+
+   if (Init) {
+      State  = 0;
+      PrevState = -1;
+   }
+
+   if (PrevState != State) {
+      PrevState = State;
+      NewState = true;
+      printf("Template state %d\n", State);
+   }
+      
+   switch (State) { 
+      case 0 : {    // draai naar rechts
+            if (NewState) {  
+               StartRobotHoek = Position.Hoek;
+               Driver.SpeedLR(100, -100);     
+            }                                                          
+//            printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
+//            if (Driver.IsDone()) { // Als de beweging klaar is
+//               State++; // naar volgende state       
+//            }
+            if (Position.Hoek - StartRobotHoek < -45 ) State ++;
+         break; 
+      }                              
+              
+      case 1 :  {  // scan naar links
+            if (NewState) {  
+               Driver.SpeedLR(-50, 50);    
+               for (int x=0; x< 90; x++) Afstanden[x] = 999; 
+            }                      
+            int Ix = Position.Hoek + 45 - StartRobotHoek;
+            if ((Ix >= 0) && (Ix < 90)) {
+                Afstanden[Ix] = UsDistance;
+            }                                                          
+            printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
+            if (Position.Hoek - StartRobotHoek > 45 ) State ++;
+         break;  
+      }                             
+              
+      case 2 : {   // draai naar blik 
+            if (NewState) {  
+               int Min = Afstanden[0];
+               int First = 999, Last = 999;
+               
+               for (int x=0; x< 90; x++) {
+                  if (Afstanden[x] < Min) Min = Afstanden[x];
+               }
+
+               for (int x=0; x< 90; x++) {
+                  if (Afstanden[x] < (Min + 150)) {
+                     // blik in zicht
+                     if (First == 999) First = x;
+                     Last = x;
+                  } 
+               }     
+               printf("Min: %d, First: %d, Last: %d", Min, First, Last);  
+               Target = (First + Last) / 2 - 45;
+               Driver.SpeedLR(100, -100);                                    
+            }   
+
+            if (Position.Hoek - StartRobotHoek < Target ) State ++;
+                               
+         break; 
+      }                              
+                 
+      case 3 : {    // rij naar blik
+            if (NewState) {  
+               Driver.SpeedHeading(200, Target + StartRobotHoek);     
+               GrijperMagneetVast(true);
+            }                                                          
+//            printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
+//            if (Driver.IsDone()) { // Als de beweging klaar is
+//               State++; // naar volgende state       
+//            }
+            if (UsDistance < 40) State ++;
+         break; 
+      }                              
+                 
+
+
+      case 4 : {    // rij terug
+            static int EndValue;
+
+            int OdoL, OdoR, OdoT;
+            Position.OdoGet(OdoL, OdoR, OdoT) ;
+
+            if (NewState) {  
+               Driver.SpeedHeading(-200, Target + StartRobotHoek);     
+                EndValue = OdoT + 500;              
+              
+            }                                                          
+            printf("OdoT: %d\n", OdoT);
+            if ((OdoT - EndValue) > 0) {
+              GrijperMagneetVast(false);
+              State ++;
+            }
+         break; 
+      }                              
+                 
+
+                 
+                 
+      default :   // error
+            return true;   // mission end
+         break;
+   }           
+   return false;  // mission nog niet gereed
+} 
+
+
+//-----------------------------------------------------------------------------
+// TemplateTakt - 
+//-----------------------------------------------------------------------------                      
+//-----------------------------------------------------------------------------
+//bool TemplateTakt(bool Init)
+//{
+//    static int State, PrevState;
+//    bool NewState = false;
+// 
+//    if (Init) {
+//       State  = 0;
+//       PrevState = -1;
+//    }
+// 
+//    if (PrevState != State) {
+//       PrevState = State;
+//       NewState = true;
+//       printf("Template state %d\n", State);
+//    }
+//       
+//    switch (State) { 
+//       case 0 :    // 
+//             if (NewState) {
+//                Driver.XY(UMB_MARK_AFSTAND, 0, UMB_MARK_SPEED, 0);  // X, Y, Speed, EndSpeed - alles in mm(/sec)
+//             }                                                          
+// 
+//             if (Driver.IsDone()) { // Als de beweging klaar is
+//                State++; // naar volgende state       
+//             }
+//          break;               
+//               
+//       default :   // error
+//             return true;   // mission end
+//          break;
+//    }           
+//    return false;  // mission nog niet gereed
+//} 

@@ -6,27 +6,30 @@
 void DummyFunctie() { } 
 
 // Robot-specifieke parameters
-#include "RobotSettings.h"
+#include "MyRobot.h"
 
-// Hier de algemene definities
-#define MAIN_TAKT_RATE     (1000 / MAIN_TAKT_INTERVAL)   // Hz
-#define WIEL_BASIS         ((ODO_TICK_TO_METRIC * 917L) / ODO_HEADING)
-#define RAD2GRAD(x) ((float)(x) * 57.2957795)   // uitkomst is float, deze kan evt zonder verlies geschaald worden naar hogere resulotie
-#define ACT_SPEED_MM_SEC(ActSpeed) ((ActSpeed * (long)ODO_TICK_TO_METRIC)) / (4 * MAIN_TAKT_INTERVAL);
-#define ABS(x) ( (x>=0) ? x : -x )
 
 // include Position class & instantieer
-#include "Position.h"
 TPosition Position;
 
 // include Drive class & instantieer
-#include "Drive.h"
 TDrive Driver;
 bool SecondLoggingOn = true;
 
-int SharpVoor, SharpRechts;    // sharp meting - afstand in mm
-long SharpVoor_Gemiddelde, SharpRechts_Gemiddelde;
+int SharpLinks, SharpRechts;    // sharp meting - afstand in mm
+long SharpLinks_Gemiddelde, SharpRechts_Gemiddelde;
 
+int Lijn;  // 0..7, 3 bits. 0 = wit, 7 = zwart, 1 = links, 2 = midden, 4 = rechts
+
+//#include <NewPing.h>
+//#define TRIGGER_PIN  3
+//#define ECHO_PIN     4
+//#define MAX_DISTANCE 200
+//NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
+
+unsigned long pingTimer;     // Holds the next ping time.
+
+int UsDistance; 
 
 //---------------------------------------------------------------------------------------
 // RC5 stuff start
@@ -52,6 +55,37 @@ void Rc5Isr()
 //---------------------------------------------------------------------------------------
 
 
+//#include <Servo.h>
+//Servo myservo;  // create servo object to control a servo
+
+// to support printf 
+int my_putc(char c, FILE __attribute__ ((unused)) *t) {
+  if (c == '\n') Serial.write('\r');  
+  return Serial.write(c);
+}
+
+// the setup routine runs once when you press reset:
+void setup() {
+   // start serial
+   Serial.begin(115200);
+   Serial.println("Starten....\n");
+
+   fdevopen( &my_putc, 0);  // device 0 (stdout) output naar my_putc()
+
+   MotorsSetup();
+
+   EncoderSetup();
+
+   // Link PinChange interrupt to RC5 reader.
+   attachInterrupt(RC5_INTERRUPT, Rc5Isr, CHANGE); 
+
+   pingTimer = millis(); // Start now.
+
+   ServoSetup();
+   GrijperMagneetVast(false);
+
+   printf("Opstarten gereed.\n");
+}
 
 
 void loop() {
@@ -65,9 +99,10 @@ void loop() {
    int ms = millis();
    if (ms != PrevMs) {  // miliseconde takt
       PrevMs = ms;  // bewaar huidige tijd
-      SharpVoor   = SharpTakt(SHARP_VOOR_PIN,   SharpVoor_Gemiddelde,   400*148L);
+      SharpLinks   = SharpTakt(SHARP_LINKS_PIN,   SharpLinks_Gemiddelde,   400*148L);
       SharpRechts = SharpTakt(SHARP_RECHTS_PIN, SharpRechts_Gemiddelde, 400*148L);
       BlinkTakt();
+      Lijn = 7 - (digitalRead(5) * 1 + digitalRead(6) * 2 + digitalRead(7) * 4);
    }
 
    // Main takt interval
@@ -78,8 +113,14 @@ void loop() {
       // hier de periodieke acties voor deze interval
       Position.Takt(); // Lees & verwerk encoder data
       ProgrammaTakt(); // Voer (stapje van) geselecteerde programma uit
-      Driver.Takt();    // stuur motoren aan
+      Driver.Takt();   // stuur motoren aan       
+   }
 
+   if (millis() >= pingTimer) {   // pingSpeed milliseconds since last ping, do another ping.
+      pingTimer += 50;           // Set the next ping time.
+//      UsDistance = 10 * sonar.ping_cm(); // Ping returned, uS result in ping_result, convert to cm with US_ROUNDTRIP_CM.
+      
+//      sonar.ping_timer(echoCheck); // Send out the ping, calls "echoCheck" function every 24uS where you can check the ping status.
    }
 
    // Seconde interval
@@ -101,13 +142,27 @@ void loop() {
          //int Spanning = (int) (145L * Batterij / 960);  // 14.8 volt geeft waarde 964
          //printf("Batterij: %d (V * 10) (%d)\n", Spanning, Batterij);
    
-         printf("Sharp %d %d %d %d\n", SharpVoor, SharpRechts, analogRead(SHARP_VOOR_PIN), analogRead(SHARP_RECHTS_PIN) );
+         printf("Sharp %d %d %d %d\n", SharpLinks, SharpRechts, analogRead(SHARP_LINKS_PIN), analogRead(SHARP_RECHTS_PIN) );
+         printf("Lijn: %d (%d %d %d)\n", Lijn, digitalRead(5), digitalRead(6), digitalRead(7));
+         printf("Sonar: %d\n", UsDistance);
       }
-
    }
 }
 
 
+
+//void echoCheck() { // Timer2 interrupt calls this function every 24uS where you can check the ping status.
+//  // Don't do anything here!
+//  if (sonar.check_timer()) { // This is how you check to see if the ping was received.
+//    // Here's where you can add code.
+////    Serial.print("Ping: ");      
+////    Serial.print(sonar.ping_result / US_ROUNDTRIP_CM); // Ping returned, uS resul    
+//    UsDistance = 10 * sonar.ping_result / US_ROUNDTRIP_CM; // Ping returned, uS result in ping_result, convert to cm with US_ROUNDTRIP_CM.
+////    UsDistance = 10 * sonar.ping_cm(); // Ping returned, uS result in ping_result, convert to cm with US_ROUNDTRIP_CM.
+////    Serial.println("cm");
+//  }
+//  // Don't do anything here!
+//}
 
 void BlinkTakt()
 {  static int Count;
@@ -119,3 +174,51 @@ void BlinkTakt()
    }
    Count ++;
 }
+
+
+
+
+//---------------------------------------------------------------------------------------
+// Servo stuff
+void ServoSetup()
+{
+   // timer 1 voor servo isr (want de standaard library gebruikt timer 5 en die hebben we nodig voor pwm)
+   TCCR1A = 0;             // normal counting mode 
+   TCCR1B = _BV(CS11);     // set prescaler of 8 
+   TCNT1 = 0;              // clear the timer count 
+   TIFR1 |= _BV(OCF1A);     // clear any pending interrupts; 
+   TIMSK1 |=  _BV(OCIE1A) ; // enable the output compare interrupt 
+
+   pinMode(53, OUTPUT);
+}
+
+int ServoTime = 1500;  
+void GrijperMagneetVast(bool Vast)
+{
+  if (Vast) {
+    ServoTime = 1150;   // vast
+  } else {
+    ServoTime = 1500;    // los
+  }
+}
+
+ISR(TIMER1_COMPA_vect) 
+{ 
+//  handle_interrupts(_timer1, &TCNT1, &OCR1A); 
+  //static bool Toggle;
+  static bool State;
+
+  if (State) {
+    // set pin
+    digitalWrite(53, 1);
+    OCR1A = ServoTime * 2;  // time in us * 2
+    TCNT1 = 0;      // restart cycle
+    State = 0;
+  } else {
+    digitalWrite(53, 0);
+    OCR1A  = 40000;  // cycle time 20ms     
+    State = 1;
+  }
+}
+// Servo Stuff
+//---------------------------------------------------------------------------------------
