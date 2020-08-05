@@ -1,0 +1,19 @@
+[Project ID]
+Signature=UE Proj: v.1
+Unicode=2
+[Project Information]
+Use Relative Directory=1
+Relative to Project File=1
+Include Sub Directories=1
+Project TagfileU=
+Project WordfileU=
+Project TpFileU=
+FilterU=
+Create Tagfile=0
+[FilesU]
+0=motors.cpp
+1=link+AF8-opt.h
+2=encoders.cpp
+3=Commands.h
+4=ArloMotorController.ino
+5=project.h
