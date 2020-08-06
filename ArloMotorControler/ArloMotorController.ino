@@ -1,7 +1,7 @@
 // ArloMotorController.ino
 
 #include "project.h"
-#include "commands.h"
+#include "Commands.h"
 
 //https://forum.arduino.cc/index.php?topic=566042.0
 HardwareSerial Serial(USART1);

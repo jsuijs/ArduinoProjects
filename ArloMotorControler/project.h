@@ -1,5 +1,5 @@
 // project.h
-#include "arduino.h"
+#include "Arduino.h"
 
 extern HardwareSerial Serial;
 
