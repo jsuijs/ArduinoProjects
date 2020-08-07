@@ -29,24 +29,30 @@ class TCommand
 
 public:
 
-   TCommand()  { Clear(); }
+   TCommand(void (*CmdExecFunction)(int Param[]));
    char Takt(Stream &Ser);
-   byte Match(const char *Keyword, byte NrParams);   // return true on success (command & parameter match)
+
+   bool Match(const char *Keyword, byte NrParams);   // return true on success (command & parameter count match)
 
    void Print()
    {
-      printf( "Cnt = %d  A=%u  B=%u  C=%u  Cmd=%s\r\n", ParamCount, Number[0], Number[1], Number[2], Cmd) ;
+      printf( "Cnt = %d  A=%u  B=%u  C=%u  Cmd=%s\r\n", ParamCount, Param[0], Param[1], Param[2], Cmd) ;
    }
 
-private:
+   // functions below public, just in case you need to build your own takt...
    void Clear()  { State = 0 ; }  // Clear - Signal we want to restart
-   int  GetLine( int Value );
-   bool Add( int Value );
-   char Execute();
+   int  GetLine(int Value);
+   char Execute(int Verbose = 2);
+
+
+private:
+   bool AddParam( int Value );
+
+   void (*Executor)(int Param[]);
 
    char Cmd[CMD_BUFFER_SIZE] ;
 
-   int  Number[CMD_MAX_NR_PARAMETERS] ;
+   int  Param[CMD_MAX_NR_PARAMETERS] ;
    int  NrIndex   ;
    int  ParamCount;
 
@@ -57,200 +63,216 @@ private:
    bool Negative  ;
 
    int  LastError ; // for Execute &() MatchCommand() only
+};
+
+//-----------------------------------------------------------------------------
+// TCommand::TCommand - constructor
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+TCommand::TCommand(void (*CmdExecFunction)(int Number[]))
+{
+   Executor = CmdExecFunction;
+   Clear();
 }
-;
 
-
-// return: 0 doe niets  1 ok    < 0 error
+//-----------------------------------------------------------------------------
+// TCommand::GetLine - Collect & interpret a command line
+//-----------------------------------------------------------------------------
+// Input:  char value, -1 means no data (ignore).
+// return:  0 collecting (no action),
+//          1 ok -> ready for execute
+//          < 0 error
+//-----------------------------------------------------------------------------
 int TCommand::GetLine(int Value)
-  {
-    if (Value < 0 ) return 0;
-    if (Value == 0x0a) Value = 0x0d;
+   {
+      if (Value < 0 ) return 0;
+      if (Value == 0x0a) Value = 0x0d;
 
-    //printf("GL Value: %d (%c), State: %d, NrIndex: %d, ParamCount: %d\n", Value, Value, State, NrIndex, ParamCount);
+      //printf("GL Value: %d (%c), State: %d, NrIndex: %d, ParamCount: %d\n", Value, Value, State, NrIndex, ParamCount);
 
-    switch( State )
-    {
-    case 0:  // wait for first alpha-char
-      {
-        if (isspace( Value ) ) return 0;
+      switch( State )   {
 
-        if (Value == '`')
-        {
-          // repeat previous command
-          State = 500;  // process whitespaces until line end
-          return 0;
-        }
-        else
-        {
-          // New input -> clear internal data.
-          Position   = 0;
-          NrIndex    = 0;
-          HexMode    = false;
-          Negative   = false;
-          ParamCount = 0;
+         case 0: { // wait for first alpha-char
 
-          for (int i=0; i<CMD_MAX_NR_PARAMETERS; i++) {
-            Number[i] = 0;
-          }
-        }
+            if (isspace( Value ) ) return 0;
 
-        if ( Value > ' ' )
-        {
-          Add( Value );
-          State = 100;
-          return 0;
-        }
-        State = 900;
-        return -1;
-      }
-    case 100:  // wait for other command word chars
-      {
-        if (isalnum( Value ) == false )
-        {
-          if (isspace( Value ))
-          {
+            if (Value == '`') {
+               // repeat previous command
+               State = 500;  // process whitespaces until line end
+               return 0;
+            } else {
+               // New input -> clear internal data.
+               Position   = 0;
+               NrIndex    = 0;
+               HexMode    = false;
+               Negative   = false;
+               ParamCount = 0;
+
+               for (int i=0; i<CMD_MAX_NR_PARAMETERS; i++) {
+                  Param[i] = 0;
+               }
+            }
+
+            if ( Value > ' ' ) {
+               AddParam(Value);
+               State = 100;
+               return 0;
+            }
+            State = 900;
+            return -1;
+         }
+
+         case 100: { // wait for other command word chars
+
+            if (isalnum( Value ) == false ) {
+               if (isspace( Value )) {
+                  if (Value == 0x0d ) break;
+                  State = 200;
+                  return 0;
+               }
+               State = 900;
+               return -1;
+            }
+
+            AddParam(Value);
+            return 0;
+         }
+
+         case 200: { // First character of parameter/number
+
             if (Value == 0x0d ) break;
 
-            State = 200;
+            if (isspace( Value )) return 0;
+
+            if (Value == '-' ) {
+               Negative = true;
+               Param[ NrIndex ] = 0;
+               HexMode = false;
+               State = 400;
+               return 0;
+            }
+
+            if (isdigit( Value ) == false ) return -2;
+
+            if (Value == '0') {
+               State = 300; // wait for 'x' ('0x', hex pre-amble), number, whitespace or line-end
+               return 0;
+            }
+
+            Param[ NrIndex ] = Value - 0x30;
+            HexMode = false;
+            State = 400;      // Collect number
             return 0;
-          }
-          State = 900;
-          return -1;
-        }
-        Add( Value );
+         }
 
-        return 0;
+         case 300: { // wait for 'x' ('0x', hex pre-amble), number, whitespace or line-end
+
+            ParamCount = NrIndex + 1;
+
+            if (( Value | 0x20 ) == 'x' ) {
+               HexMode = true;
+               State = 400;
+               return 0;
+            }
+
+            if (Value == 0x0d ) break;
+
+            if (isspace(Value)) {
+
+               NrIndex++;
+
+               if (NrIndex >= CMD_MAX_NR_PARAMETERS) {
+                  State = 500;  // allow only whitespaces or line-end
+               } else {
+                  State = 200;  // Get first char of next param
+               }
+
+               return 0;
+            }
+
+            if (isdigit(Value)) {
+               // '0' followed by digit -> decimal input
+               Param[ NrIndex ] = Value - 0x30;
+               HexMode = false;
+               State = 400;
+               return 0;
+            }
+
+            State = 900;
+            return -3;  // no 'x', number, whitespace or line-end -> bad sequence
+         }
+
+         case 400: { // collect number (hex or decimal)
+
+            ParamCount = NrIndex + 1;
+
+            if (Value == 0x0d ) break;
+
+            if (isspace(Value)) {
+
+               NrIndex++;
+
+               if (NrIndex > CMD_MAX_NR_PARAMETERS) {
+                  State = 500;  // last parameter (allowed)
+               } else {
+                  Negative = false;
+                  State = 200;  // scan (optional) next parameter
+               }
+
+               return 0;
+            }
+
+            if (HexMode) {
+
+               if (isxdigit( Value ) == false ) return -5;
+
+               if (isalpha(Value)) {
+                  Value = (Value & 0xdf) - 55;
+               } else {
+                  Value = (Value - 0x30);
+               }
+
+               Param[ NrIndex ] = Param[ NrIndex ] * 16 + Value;
+
+            } else {
+               if (isdigit( Value )  == false ) return -6;
+
+               Value = Value - 0x30;
+               if (Negative) Value *= -1;
+
+               Param[ NrIndex ] = Param[ NrIndex ] * 10 + Value;
+            }
+
+            return 0;
+         }
+
+         case 500: { // allow only whitespaces / line-end
+
+            if (Value == 0x0d ) break;
+
+            if (isspace( Value ) ) return 0;
+
+            State = 900;
+            return -7;
+         }
+
+         case 900: { // wait for line-end (error recovery)
+
+            if (Value == 0x0d ) break;
+            return 0;
+         }
       }
-    case 200:   // First character of parameter/number
-      {
-        if (Value == 0x0d ) break;
-        if (isspace( Value )) return 0;
-
-        if (Value == '-' )
-        {
-          Negative = true;
-          Number[ NrIndex ] = 0;
-          HexMode = false;
-          State = 400;
-          return 0;
-        }
-        if (isdigit( Value ) == false ) return -2;
-
-        if (Value == '0') {
-          State = 300; // wait for 'x' ('0x', hex pre-amble), number, whitespace or line-end
-          return 0;
-        }
-
-        Number[ NrIndex ] = Value - 0x30;
-        HexMode = false;
-        State = 400;      // Collect number
-        return 0;
-      }
-    case 300:  // wait for 'x' ('0x', hex pre-amble), number, whitespace or line-end
-      {
-        ParamCount = NrIndex + 1;
-
-        if (( Value | 0x20 ) == 'x' ) {
-          HexMode = true;
-          State = 400;
-          return 0;
-        }
-
-        if (Value == 0x0d ) break;
-
-        if (isspace(Value)) {
-
-          NrIndex++;
-
-          if (NrIndex >= CMD_MAX_NR_PARAMETERS) {
-            State = 500;  // allow only whitespaces or line-end
-          } else {
-            State = 200;  // Get first char of next param
-          }
-
-          return 0;
-        }
-        if (isdigit( Value ) )
-        {
-          // '0' followed by digit -> decimal input
-          Number[ NrIndex ] = Value - 0x30;
-          HexMode = false;
-          State = 400;
-          return 0;
-        }
-
-        State = 900;
-        return -3;  // no 'x', number, whitespace or line-end -> bad sequence
-      }
-    case 400: // collect number (hex or decimal)
-      {
-
-        ParamCount = NrIndex + 1;
-
-        if (Value == 0x0d ) break;
-
-        if ( isspace( Value ) )
-        {
-          NrIndex++;
-
-          if (NrIndex > CMD_MAX_NR_PARAMETERS) State = 500;  // last parameter (allowed)
-          else
-          {
-            Negative = false;
-            State = 200;  // scan (optional) next parameter
-          }
-
-          return 0;
-        }
-
-        if (HexMode )
-        {
-          if (isxdigit( Value ) == false ) return -5;
-
-          if (isalpha( Value ) ) Value = ( Value & 0xdf ) - 55;
-          else Value = ( Value - 0x30 );
-
-          Number[ NrIndex ] = Number[ NrIndex ] * 16 + Value;
-
-        }
-        else
-        {
-          if (isdigit( Value )  == false ) return -6;
-
-          Value = Value - 0x30;
-          if (Negative) Value *= -1;
-
-          Number[ NrIndex ] = Number[ NrIndex ] * 10 + Value;
-        }
-
-        return 0;
-      }
-    case 500:  // allow only whitespaces / line-end
-      {
-        if (Value == 0x0d ) break;
-
-        if (isspace( Value ) ) return 0;
-
-        State = 900;
-        return -7;
-      }
-    case 900:  // wait for line-end (error recovery)
-      {
-        if (Value == 0x0d ) break;
-
-        return 0;
-      }
-    }
-    State = 999;
+      State = 999;
 
     return 1; // Command line ready
   }
 
 //-----------------------------------------------------------------------------
+// TCommand::Match - Used by external executor function to test for commands.
 //-----------------------------------------------------------------------------
+// returns true on command & param-count match
 //-----------------------------------------------------------------------------
-byte TCommand::Match(const char *Keyword, byte NrParams)
+bool TCommand::Match(const char *Keyword, byte NrParams)
    {
       if (LastError == 0)         return false;  // this command is already executed.
       if (strcmp(Cmd, Keyword))   return false;  // not this command.
@@ -261,6 +283,7 @@ byte TCommand::Match(const char *Keyword, byte NrParams)
    }
 
 //-----------------------------------------------------------------------------
+// TCommand::Execute - Execute parsed commands, as provided by GetLine
 //-----------------------------------------------------------------------------
 // return:
 // 0 = no command
@@ -268,22 +291,22 @@ byte TCommand::Match(const char *Keyword, byte NrParams)
 // 2 = command error (incorrect nr of params, command error)
 // >2 = single command character
 //-----------------------------------------------------------------------------
-char TCommand::Execute()
+char TCommand::Execute(int Verbose)
    {
       LastError = 2;  // unknown command
 
       // -------------------------
       // *** CALL USER HANDLER ***
       // -------------------------
-      MyCommands(Number);
+      (*Executor)(Param);
 
       switch(LastError) {
          case 0 : {
-            printf("Cmd '%s' gereed.\n", Cmd);
+            if (Verbose > 1) printf("Cmd '%s' gereed.\n", Cmd);
             return 1;
          }
          case 1 : {
-            printf("Error: # params - cmd '%s'\n", Cmd);
+            if (Verbose > 0) printf("Error: # params - cmd '%s'\n", Cmd);
             return 2;
          }
          case 2 : {  // unknown command
@@ -291,7 +314,7 @@ char TCommand::Execute()
                // single char keyword => return char
                return Cmd[0];
             } else {
-               printf("Onbekend cmd '%s' (2)\n", Cmd);
+               if (Verbose > 1) printf("Onbekend cmd '%s' (2)\n", Cmd);
                return 2;
             }
             break;
@@ -338,9 +361,10 @@ char TCommand::Takt(Stream &Ser)
    }
 
 //-----------------------------------------------------------------------------
+// AddParam - Add command-param to list
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool TCommand::Add( int Value )
+bool TCommand::AddParam( int Value )
    {
       if (Position >= ((int) sizeof(Cmd) - 1)) return false;
 
@@ -350,12 +374,6 @@ bool TCommand::Add( int Value )
       return true;
    }
 
-/*==============================================
- Variables :
- ----------------------------------------------*/
-
-TCommand Command;
-
 //-----------------------------------------------------------------------------
 // HexDump - Dump Data in hex format
 //-----------------------------------------------------------------------------
@@ -363,7 +381,7 @@ TCommand Command;
 //-----------------------------------------------------------------------------
 void HexDump(const void *Data, int Length)
 {
-  HexDump(Data, Length, 0);
+   HexDump(Data, Length, 0);
 }
 
 /*=====================================================================
@@ -376,47 +394,41 @@ void HexDump(const void *Data, int Length)
 //-----------------------------------------------------------------------------
 void HexDump( const void *Data, unsigned int Length, unsigned int Offset)
 {
-  unsigned char *data    = (unsigned char *)Data;
+   unsigned char *data  = (unsigned char *)Data;
+   unsigned int Track1  = 0;
+   unsigned int Track2  = 0;
 
-  unsigned int Track1 = 0;
-  unsigned int Track2 = 0;
-
-  for( unsigned int Index=0; Index < Length; Index = Index+16 )
-  {
-    printf( "%04x: ", Offset + Index );
-
-    for( unsigned int j=0; j < 16; j++ )
-    {
-      if (Track1 < Length ) printf( "%02x", data[ Index+j ] );
-      else printf( "  " );
-
-      printf( " " );
-
-      Track1++;
-    }
-
-    printf( " "  );
-
-    for( unsigned int j=0; j < 16; j++ )
-    {
-      if (Track2 < Length )
-      {
-        if (data[ Index+j ] < 32 ) printf( "." );
-        else
-        {
-          if (data[ Index+j ] < 127 ) printf( "%c", data[ Index+j ] );
-          else printf( "."                   );
-        }
+   // HEX part
+   for (unsigned int Index=0; Index < Length; Index = Index+16) {
+      printf( "%04x: ", Offset + Index );
+      for(unsigned int j=0; j<16; j++) {
+         if (Track1 < Length ) {
+            printf( "%02x", data[ Index+j ] );
+         } else {
+            printf( "  " );
+         }
+         printf( " " );
+         Track1++;
       }
-      else printf( " " );
 
-      Track2++;
-    }
+      printf( " "  );
 
-    printf( "\n" );
-  }
+      // ASCII part
+      for(unsigned int j=0; j<16; j++) {
+         if (Track2 < Length) {
+            if (data[Index+j] < 32 ) {
+               printf( "." );
+            } else {
+               if (data[Index+j] < 127) printf("%c", data[Index+j]);
+               else printf(".");
+            }
+         }
+         else printf( " " );
+         Track2++;
+      }
+      printf( "\n" );
+   }
 }
-
 
 //-----------------------------------------------------------------------------
 // Bcd - convert decimal value to bcd.
@@ -424,7 +436,7 @@ void HexDump( const void *Data, unsigned int Length, unsigned int Offset)
 //-----------------------------------------------------------------------------
 byte Bcd(byte Decimal)
 {
-  return (Decimal / 10) * 16 + (Decimal % 10);
+   return (Decimal / 10) * 16 + (Decimal % 10);
 }
 
 #endif
