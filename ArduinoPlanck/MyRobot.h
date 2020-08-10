@@ -7,7 +7,7 @@
 // Position.cpp
 //-----------------------------------------------------------------------------
 #include "Arduino.h"
-#include "RobotSettings.h" 
+#include "RobotSettings.h"
 
 #define TICKS_360_GRADEN (360L * 256 * 256 / ODO_HEADING)
 #define GRAD2RAD(x) ((float)(x) / 57.2957795)
@@ -76,7 +76,7 @@ class TDrive
       TDrive();
       void Takt();
       bool IsDone();
-      
+
       // bewegingen
       void Power(int PowerL, int PowerR);
       void SpeedLR(int SpeedL, int SpeedR);
@@ -87,8 +87,8 @@ class TDrive
       void Stop();
 
 
-      int SollSpeedL, SollSpeedR; // Snelheid (in mm/sec) die we nastreven, verandering begrensd door MaxSlope     
-            
+      int SollSpeedL, SollSpeedR; // Snelheid (in mm/sec) die we nastreven, verandering begrensd door MaxSlope
+
    private:
 
       // private vars
@@ -107,21 +107,21 @@ class TDrive
       // private methods
       void UpdateSpeedSP(int InSpeedL, int InSpeedR, int MaxSlopeP);
 
-      void SpeedLRTakt(bool FirstCall, int SpeedL, int SpeedR, int MaxSlopeP);        
+      void SpeedLRTakt(bool FirstCall, int SpeedL, int SpeedR, int MaxSlopeP);
       bool SpeedHeadingTakt(bool FirstCall, int InSpeed, int InHeading);
-      bool XYTakt(bool FirstCall, int TargetX, int TargetY, int Speed, int EndSpeed);     
-      bool RotateTakt(bool FirstCall, int InHeading);           
+      bool XYTakt(bool FirstCall, int TargetX, int TargetY, int Speed, int EndSpeed);
+      bool RotateTakt(bool FirstCall, int InHeading);
       bool ArcTakt(bool FirstCall, int Heading, int Radius, int Speed, int EndSpeed);
       bool StopTakt(bool FirstCall);
-      
-}; 
+
+};
 
 extern TDrive Driver;
 
 
 // Motors.cpp
-void MotorsSetup_TB6612();
-void Motors_TB6612(int PwmL, int PwmR);
+void MotorsSetup_A4950();
+void Motors_A4950(int PwmL, int PwmR);
 
 // MotorController.
 void MotorController(int SetpointL, int SetpointR);

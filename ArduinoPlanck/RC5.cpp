@@ -14,7 +14,7 @@
 #define MIN_LONG  1334
 #define MAX_LONG  2222
 
-/* 
+/*
  * These step by two because it makes it
  * possible to use the values as bit-shift counters
  * when making state-machine transitions.  States
@@ -24,21 +24,21 @@
 #define EVENT_SHORTPULSE  2
 #define EVENT_LONGSPACE   4
 #define EVENT_LONGPULSE   6
- 
+
 #define STATE_START1 0
 #define STATE_MID1   1
 #define STATE_MID0   2
 #define STATE_START0 3
 
 /*
- * definitions for parsing the bitstream into 
+ * definitions for parsing the bitstream into
  * discrete parts.  14 bits are parsed as:
  * [S1][S2][T][A A A A A][C C C C C C]
  * Bits are transmitted MSbit first.
  */
 #define S2_MASK       0x1000  // 1 bit
 #define S2_SHIFT      12
-#define TOGGLE_MASK   0x0800  // 1 bit 
+#define TOGGLE_MASK   0x0800  // 1 bit
 #define TOGGLE_SHIFT  11
 #define ADDRESS_MASK  0x7C0  //  5 bits
 #define ADDRESS_SHIFT 6
@@ -47,16 +47,16 @@
 
 
 /* trans[] is a table of transitions, indexed by
- * the current state.  Each byte in the table 
+ * the current state.  Each byte in the table
  * represents a set of 4 possible next states,
  * packed as 4 x 2-bit values: 8 bits DDCCBBAA,
- * where AA are the low two bits, and 
+ * where AA are the low two bits, and
  *   AA = short space transition
  *   BB = short pulse transition
  *   CC = long space transition
  *   DD = long pulse transition
  *
- * If a transition does not change the state, 
+ * If a transition does not change the state,
  * an error has occured and the state machine should
  * reset.
  *
@@ -67,8 +67,8 @@
  * 11 11 10 11  from state 3: short pulse->2
  */
 const unsigned char trans[] = {0x01,
-                               0x91,  
-                               0x9B,  
+                               0x91,
+                               0x9B,
                                0xFB};
 
 RC5::RC5(unsigned char pin)
@@ -127,8 +127,8 @@ bool RC5::read(unsigned int *message)
        is equal to the theoretical (uninverted) signal value of the time period that
        has just ended.
     */
-    int value = digitalRead(this->pin);
-    
+    unsigned long value = digitalRead(this->pin);
+
     if (value != this->lastValue) {
         unsigned long time1 = micros();
         unsigned long elapsed = time1-this->time0;
@@ -136,7 +136,7 @@ bool RC5::read(unsigned int *message)
         this->lastValue = value;
         this->decodePulse(value, elapsed);
     }
-    
+
     if (this->bits == 14) {
         *message = this->command;
         this->command = 0;
@@ -153,13 +153,13 @@ bool RC5::read(unsigned char *toggle, unsigned char *address, unsigned char *com
     if (this->read(&message)) {
         *toggle  = (message & TOGGLE_MASK ) >> TOGGLE_SHIFT;
         *address = (message & ADDRESS_MASK) >> ADDRESS_SHIFT;
-        
+
         // Support for extended RC5:
         // to get extended command, invert S2 and shift into command's 7th bit
         unsigned char extended;
         extended = (~message & S2_MASK) >> (S2_SHIFT - 7);
         *command = ((message & COMMAND_MASK) >> COMMAND_SHIFT) | extended;
-        
+
         return true;
     } else {
         return false;

@@ -185,8 +185,8 @@ volatile int EncoderLTeller, EncoderRTeller;  // aantal flanken
 //------------------------------------------------------------------------------
 void EncoderSetup()
 {
-  attachInterrupt(ENCODER_L_INTERRUPT, IsrEncoderL, CHANGE); 
-  attachInterrupt(ENCODER_R_INTERRUPT, IsrEncoderR, CHANGE); 
+  attachInterrupt(ENCODER_L_PIN_A, IsrEncoderL, CHANGE);
+  attachInterrupt(ENCODER_R_PIN_A, IsrEncoderR, CHANGE);
 }
 
 //------------------------------------------------------------------------------
@@ -202,10 +202,10 @@ void EncoderRead (int &LeftDelta, int &RightDelta)
   // maak copy zonder dat er interrupts tussendoor komen.
   noInterrupts();
   // critical, time-sensitive code here
-  CopyL = EncoderLTeller;  
+  CopyL = EncoderLTeller;
   CopyR = EncoderRTeller;
   interrupts();
-  
+
   LeftDelta  = CopyL - LastL;
   RightDelta = CopyR - LastR;
   LastL = CopyL;
@@ -228,11 +228,11 @@ void EncoderPrint()
 
 void IsrEncoderL()
 {
-  if (digitalRead(ENCODER_L_PIN_B) == digitalRead(ENCODER_L_PIN_A)) {
+  if (digitalRead(ENCODER_L_PIN_B) != digitalRead(ENCODER_L_PIN_A)) {
     EncoderLTeller++;                            // stapje vooruit
   } else {
     EncoderLTeller--;                            // stapje achteruit
-  }  
+  }
 }
 
 void IsrEncoderR()
@@ -241,6 +241,6 @@ void IsrEncoderR()
     EncoderRTeller++;                            // stapje vooruit
   } else {
     EncoderRTeller--;                            // stapje achteruit
-  }  
+  }
 }
 

@@ -6,32 +6,30 @@
 #define ROBOTSETTINGS_H
 
 // IO mapping
-#define KEYBOARD_PIN    A0
-#define BATTERIJ_PIN    A7
-#define BUZZER_PIN      17
-                          
-#define SHARP_LINKS_PIN    A0
-#define SHARP_RECHTS_PIN   A1
+//#define KEYBOARD_PIN    A0
+//#define BATTERIJ_PIN    A7
+#define BUZZER_PIN      PB5
 
-#define ENCODER_L_PIN_A       25
-#define ENCODER_L_PIN_B       18 // interrupt 5   
-#define ENCODER_L_INTERRUPT    5 // pin 18
+//#define SHARP_LINKS_PIN    A0
+//#define SHARP_RECHTS_PIN   A1
 
-#define ENCODER_R_PIN_A       24
-#define ENCODER_R_PIN_B       19 // interrupt 4
-#define ENCODER_R_INTERRUPT    4 // pin 19
+#define ENCODER_L_PIN_A       PB6 //25
+#define ENCODER_L_PIN_B       PB7 //18 // interrupt 5
+//#define ENCODER_L_INTERRUPT    5 // pin 18
+
+#define ENCODER_R_PIN_A       PA0 //24
+#define ENCODER_R_PIN_B       PA1 //19 // interrupt 4
+//#define ENCODER_R_INTERRUPT    4 // pin 19
 
 // TB6612 pins:
-const int  TB6612_PWML = 45; 
-const int  TB6612_IN1L = 22;
-const int  TB6612_IN2L = 26;
-const int  TB6612_PWMR = 44;
-const int  TB6612_IN1R = 23;
-const int  TB6612_IN2R = 27;
+const int  A4950_PWML1 = PA6;
+const int  A4950_PWML2 = PA7;
+const int  A4950_PWMR1 = PB0;
+const int  A4950_PWMR2 = PB1;
 
 // motor mapping
-#define Motors(PowerL, PowerR)   Motors_TB6612(PowerL, PowerR);
-#define MotorsSetup()            MotorsSetup_TB6612();                  
+#define Motors(PowerL, PowerR)   Motors_A4950(PowerL, PowerR);
+#define MotorsSetup()            MotorsSetup_A4950();
 
 // Hier de algemene definities
 #define MAIN_TAKT_RATE     (1000 / MAIN_TAKT_INTERVAL)   // Hz
@@ -46,9 +44,9 @@ const int  TB6612_IN2R = 27;
 #define MAX_SLOPE           10   // in mm/sec/MAIN_TAKT_INTERVAL
 
 // Encoder parameters (Position.h)
-#define ODO_TICK_TO_METRIC      1100   // afstand per tick, voor het linkse wiel, 4096 betekent dat 1 tick => 1 mm 
+#define ODO_TICK_TO_METRIC      1100   // afstand per tick, voor het linkse wiel, 4096 betekent dat 1 tick => 1 mm
 #define ODO_TICK_L_R            4096   // correctie voor afwijking wielgrootte rechtse wiel t.o.v. links, 4096 = even groot
-                                 
+
 #define ODO_HEADING             5100   // vertaal odo ticks naar hoek, groter => meer graden per tick
                                        // ODO_HEADING = (ODO_TICK_TO_METRIC * 917) / WIELBASIS (in mm)
                                        // Als de robot te weinig draait, moet dit getal lager worden
@@ -56,7 +54,7 @@ const int  TB6612_IN2R = 27;
 
 
 // Motor PID (MPID) parameters (Drive.h)
-#define MPID_I_MAX      100      // integrator limit                        
+#define MPID_I_MAX      100      // integrator limit
 #define MPID_OFFSET     10       // motor offset
 #define MPID_SP_GAIN     1.0 // 3       // setpoint gain
 #define MPID_P_GAIN      1.0 //2
