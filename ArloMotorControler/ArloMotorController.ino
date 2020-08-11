@@ -13,6 +13,9 @@ TCommand Command(MyCommands);
 void MsgCommands(int Param[]);
 TCommand CmdMessages(MsgCommands);
 
+int CfgLoopTime      = 200;   // millis
+int CfgTimeOut       = 15;    // loop times
+
 //-----------------------------------------------------------------------------
 // setup -
 //-----------------------------------------------------------------------------
@@ -38,6 +41,10 @@ void setup()
    printf("ArloMotorController ready.\n");
 }
 
+int DriveMode        = 0;   // 1 = pwm, 2 = speed
+int TimeOutCounter   = 0;
+int PwmL, PwmR;
+
 //-----------------------------------------------------------------------------
 // loop -
 //-----------------------------------------------------------------------------
@@ -47,14 +54,25 @@ void loop()
    static int EncoderL, EncoderR;
    static bool LedStatus;
 
+
    int ms = millis();
    if ((ms - NextTakt) > 0) {
-      NextTakt = ms + 200;  // zet tijd voor volgende interval
+      NextTakt = ms + CfgLoopTime;  // zet tijd voor volgende interval
+
+      // Safeguard: stop robot when no comms is received.
+      if (TimeOutCounter < 0) {
+         // we are idle
+         DriveMode      = 0;
+         TimeOutCounter = 0;  // keep it at 0 or -1
+      }
+      TimeOutCounter --;
 
       LedStatus = !LedStatus;
       digitalWrite(Pin_Led, LedStatus);
 
-      // Encoder data -> PID
+      //--------------
+      // Encoder stuff
+      //--------------
       int DeltaEncL, DeltaEncR;
       EncodersRead (DeltaEncL, DeltaEncR);
       PidL_In = DeltaEncL;
@@ -71,10 +89,29 @@ void loop()
       Serial.print(EncoderR);
       Serial.println(0xC0);
 
-      // Drive motors via PIDs
-      PidTakt(0, 0);
+      //------------
+      // Drive stuff
+      //------------
+      switch (DriveMode) {
+         case 0 : {  // Idle
+            Motors(0, 0);
+         }
+         break;
+
+         case 1 : {  // PWM
+            Motors(PwmL, PwmR);
+         }
+         break;
+
+         case 2 : {  // Speed, drive motors via PID
+            PidTakt(0, 0);
+         }
+         break;
+      }
    }
-   Command.Takt(Serial);  // Drive command interpreter
+
+   Command.Takt(Serial);  // Console command interpreter
+   MessageReceiveTakt();  // Received messages interpreter
 }
 
 //-----------------------------------------------------------------------------
@@ -88,7 +125,17 @@ void MyCommands(int Param[])
    }
 
    if (Command.Match("motors", 2)) {
-      Motors(Param[0], Param[1]);
+      PwmL           = Param[0];
+      PwmR           = Param[1];
+      DriveMode      = 1; // PWM
+      TimeOutCounter = CfgTimeOut;
+   }
+
+   if (Command.Match("speed", 2)) {
+      PidL_Sp        = Param[0];
+      PidR_Sp        = Param[1];
+      DriveMode      = 2; // Speed
+      TimeOutCounter = CfgTimeOut;
    }
 
    if (Command.Match("encoders", 0)) {
@@ -96,10 +143,18 @@ void MyCommands(int Param[])
       EncodersRead (Left, Right);
       printf("Encoders: %d %d\n", Left, Right);
    }
+
+   if (Command.Match("looptime", 1)) {
+      CfgLoopTime = Param[0];    // millis
+   }
+
+   if (Command.Match("timeout", 1)) {
+      CfgTimeOut  = Param[0];    // loop times
+   }
 }
 
 //-----------------------------------------------------------------------------
-// MessageReceiveTakt - From serial to CmdMessages.
+// MessageReceiveTakt - Receive & processes messages from Serial2.
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void MessageReceiveTakt()
@@ -147,19 +202,28 @@ void MessageReceiveTakt()
 }
 
 //-----------------------------------------------------------------------------
-// MsgCommands - called to process messages received
+// MsgCommands - called to process received messages
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void MsgCommands(int Param[])
 {
 
    if (Command.Match("MOTORS", 2)) {
-      Motors(Param[0], Param[1]);
+      PwmL           = Param[0];
+      PwmR           = Param[1];
+      DriveMode      = 1; // PWM
+      TimeOutCounter = CfgTimeOut;
    }
 
    if (Command.Match("SPEED", 2)) {
-      PidL_Sp = Param[0];
-      PidR_Sp = Param[1];
+      PidL_Sp        = Param[0];
+      PidR_Sp        = Param[1];
+      DriveMode      = 2; // Speed
+      TimeOutCounter = CfgTimeOut;
    }
 
+   if (Command.Match("TIMING", 2)) {
+      CfgLoopTime = Param[0];    // millis
+      CfgTimeOut  = Param[1];    // loop times
+   }
 }
