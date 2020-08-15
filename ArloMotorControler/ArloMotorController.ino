@@ -30,7 +30,7 @@ void setup()
    Serial.begin(115200);   // Console
    Serial2.begin(115200);  // interface naar OpenCR.
 
-   //  Serial.println("Serial _ ready.");
+   Serial.println("Serial - ready.");
    Serial2.println("Serial2 ready.");
 
    EncodersInit();
@@ -81,13 +81,7 @@ void loop()
       EncoderL += DeltaEncL;
       EncoderR += DeltaEncR;
 
-      // Output ENCODERS message
-      Serial.print(0xC1);
-      Serial.print("ENCODERS ");
-      Serial.print(EncoderL);
-      Serial.print(" ");
-      Serial.print(EncoderR);
-      Serial.println(0xC0);
+      SendEncoderMessage(EncoderL, EncoderR);
 
       //------------
       // Drive stuff
@@ -158,10 +152,12 @@ void MyCommands(int Param[])
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void MessageReceiveTakt()
-{  bool ReceivingMsg = false;
+{  static bool ReceivingMsg = false;
 
    while (Serial2.available() > 0) {
       int ch = Serial2.read();
+
+//      printf("aa %d %d\n", ch, ReceivingMsg);
 
       if (ch == 0xC1) {
          // Start flag
@@ -185,7 +181,7 @@ void MessageReceiveTakt()
             CmdMessages.Clear();
             continue;
          }
-
+         //CmdMessages.Print();
          CmdMessages.Execute(1);  // Verbose level 1: only errors.
          CmdMessages.Clear();
       }
@@ -207,23 +203,36 @@ void MessageReceiveTakt()
 //-----------------------------------------------------------------------------
 void MsgCommands(int Param[])
 {
-
-   if (Command.Match("MOTORS", 2)) {
+   if (CmdMessages.Match("MOTORS", 2)) {
       PwmL           = Param[0];
       PwmR           = Param[1];
       DriveMode      = 1; // PWM
       TimeOutCounter = CfgTimeOut;
    }
 
-   if (Command.Match("SPEED", 2)) {
+   if (CmdMessages.Match("SPEED", 2)) {
       PidL_Sp        = Param[0];
       PidR_Sp        = Param[1];
       DriveMode      = 2; // Speed
       TimeOutCounter = CfgTimeOut;
    }
 
-   if (Command.Match("TIMING", 2)) {
+   if (CmdMessages.Match("TIMING", 2)) {
       CfgLoopTime = Param[0];    // millis
       CfgTimeOut  = Param[1];    // loop times
    }
+}
+
+//-----------------------------------------------------------------------------
+// SendEncoderMessage -
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+void SendEncoderMessage(int EncL, int EncR)
+{
+   Serial2.print((char) 0xC1);
+   Serial2.print("ENCODERS ");
+   Serial2.print(EncL);
+   Serial2.print(" ");
+   Serial2.print(EncR);
+   Serial2.println((char) 0xC0);
 }

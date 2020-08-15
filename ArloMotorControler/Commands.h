@@ -44,7 +44,6 @@ public:
    int  GetLine(int Value);
    char Execute(int Verbose = 2);
 
-
 private:
    bool AddParam( int Value );
 
@@ -265,7 +264,7 @@ int TCommand::GetLine(int Value)
       State = 999;
 
     return 1; // Command line ready
-  }
+   }
 
 //-----------------------------------------------------------------------------
 // TCommand::Match - Used by external executor function to test for commands.
@@ -274,6 +273,7 @@ int TCommand::GetLine(int Value)
 //-----------------------------------------------------------------------------
 bool TCommand::Match(const char *Keyword, byte NrParams)
    {
+      //printf("Match Cmd: '%s' Keyword: '%s', NrParams: %d\n", Cmd, Keyword, NrParams);
       if (LastError == 0)         return false;  // this command is already executed.
       if (strcmp(Cmd, Keyword))   return false;  // not this command.
       LastError = 1;  // command recognised, but (maybe) incorrect nr of params
@@ -314,7 +314,7 @@ char TCommand::Execute(int Verbose)
                // single char keyword => return char
                return Cmd[0];
             } else {
-               if (Verbose > 1) printf("Onbekend cmd '%s' (2)\n", Cmd);
+               if (Verbose > 0) printf("Onbekend cmd '%s' (2)\n", Cmd);
                return 2;
             }
             break;
