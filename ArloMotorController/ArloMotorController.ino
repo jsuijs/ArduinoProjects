@@ -96,8 +96,8 @@ void loop()
          break;
 
          case 2 : {  // Speed, drive motors via PID
-            PidL_In = DeltaEncL;
-            PidR_In = DeltaEncR;
+            PidL_In = (DeltaEncL * 1000.0) / CfgLoopTime;    // ticks/sec
+            PidR_In = (DeltaEncR * 1000.0) / CfgLoopTime;
 
             PidL.Compute();
             PidR.Compute();
