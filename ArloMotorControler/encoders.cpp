@@ -8,12 +8,11 @@ HardwareTimer Timer4(TIM4);
 //STM32Cube_FW_F4_V1.16.0\Projects\STM32469I_EVAL\Examples\TIM\TIM_Encoder\Src\main.c
 
 //-----------------------------------------------------------------------------
-// EncodersInit -
+// EncodersInit - init hardware quadrature encoders & corresponding IO
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void EncodersInit()
 {
-
    pinMode(PA0, INPUT_PULLUP);
    pinMode(PA1, INPUT_PULLUP);
    pinMode(PB6, INPUT_PULLUP);

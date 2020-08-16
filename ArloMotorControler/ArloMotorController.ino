@@ -1,7 +1,7 @@
 // ArloMotorController.ino
 
 #include "project.h"
-#include "commands.h"
+#include "Commands.h"
 
 //https://forum.arduino.cc/index.php?topic=566042.0
 HardwareSerial Serial(USART1);
@@ -13,8 +13,13 @@ TCommand Command(MyCommands);
 void MsgCommands(int Param[]);
 TCommand CmdMessages(MsgCommands);
 
+// global parameters (set by commands/messages, used by loop)
 int CfgLoopTime      = 200;   // millis
-int CfgTimeOut       = 15;    // loop times
+int CfgTimeOut       =  15;   // loop times
+int DriveMode        =   0;   // 0 = off, 1 = pwm, 2 = speed
+int TimeOutCounter   =   0;
+int PwmL             =   0;
+int PwmR             =   0;
 
 //-----------------------------------------------------------------------------
 // setup -
@@ -25,25 +30,15 @@ void setup()
    // initialize the digital pin as an output.
    pinMode(Pin_Led, OUTPUT);
 
-   // LET OP: het is blijkbaar van belang ook de 2e poort te openen aan het begin
-   // van het programma. Anders lijkt serial2 toch usart1 te worden....
    Serial.begin(115200);   // Console
    Serial2.begin(115200);  // interface naar OpenCR.
-
-   Serial.println("Serial - ready.");
-   Serial2.println("Serial2 ready.");
 
    EncodersInit();
    MotorsInit();
 
-   PidTakt(0, 0); // init
-
+   delay(100);  // wait for Arduino IDE to re-enable the terminal after programming...
    printf("ArloMotorController ready.\n");
 }
-
-int DriveMode        = 0;   // 1 = pwm, 2 = speed
-int TimeOutCounter   = 0;
-int PwmL, PwmR;
 
 //-----------------------------------------------------------------------------
 // loop -
@@ -54,38 +49,41 @@ void loop()
    static int EncoderL, EncoderR;
    static bool LedStatus;
 
-
    int ms = millis();
    if ((ms - NextTakt) > 0) {
       NextTakt = ms + CfgLoopTime;  // zet tijd voor volgende interval
 
-      // Safeguard: stop robot when no comms is received.
-      if (TimeOutCounter < 0) {
+      //-----------------------------------------------------------------------
+      // Timeout safeguard: stop robot when no comms is received
+      //-----------------------------------------------------------------------
+      if (TimeOutCounter > 0) {
+         TimeOutCounter --;
+      } else {
          // we are idle
+         if (TimeOutCounter == 0) {
+            printf("Timeout safeguard: motors stopped.\n");
+         }
          DriveMode      = 0;
-         TimeOutCounter = 0;  // keep it at 0 or -1
+         TimeOutCounter = -1;  // we're stopped
       }
-      TimeOutCounter --;
 
       LedStatus = !LedStatus;
       digitalWrite(Pin_Led, LedStatus);
 
-      //--------------
+      //-----------------------------------------------------------------------
       // Encoder stuff
-      //--------------
+      //-----------------------------------------------------------------------
       int DeltaEncL, DeltaEncR;
       EncodersRead (DeltaEncL, DeltaEncR);
-      PidL_In = DeltaEncL;
-      PidR_In = DeltaEncR;
 
       EncoderL += DeltaEncL;
       EncoderR += DeltaEncR;
 
       SendEncoderMessage(EncoderL, EncoderR);
 
-      //------------
+      //-----------------------------------------------------------------------
       // Drive stuff
-      //------------
+      //-----------------------------------------------------------------------
       switch (DriveMode) {
          case 0 : {  // Idle
             Motors(0, 0);
@@ -98,7 +96,13 @@ void loop()
          break;
 
          case 2 : {  // Speed, drive motors via PID
-            PidTakt(0, 0);
+            PidL_In = DeltaEncL;
+            PidR_In = DeltaEncR;
+
+            PidL.Compute();
+            PidR.Compute();
+
+            Motors(PidL_Out, PidR_Out);
          }
          break;
       }
@@ -144,6 +148,18 @@ void MyCommands(int Param[])
 
    if (Command.Match("timeout", 1)) {
       CfgTimeOut  = Param[0];    // loop times
+   }
+
+   if (Command.Match("tunings", 3)) {
+      // set tunings, same for both motors.
+      // Note: scaled by 100 since commands only support int's.
+      PidL.SetTunings(Param[0] / 100.0, Param[1] / 100.0, Param[2] / 100.0);
+      PidR.SetTunings(Param[0] / 100.0, Param[1] / 100.0, Param[2] / 100.0);
+   }
+
+   if (Command.Match("tunings", 0)) {
+      // print tunings
+      printf("Tunings: %f %f %f\n", PidL.GetKp(),  PidL.GetKi(),  PidL.GetKd());
    }
 }
 
