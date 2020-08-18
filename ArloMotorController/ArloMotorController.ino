@@ -67,7 +67,7 @@ void loop()
          }
          DriveMode      = 0;
          TimeOutCounter = -1;  // we're stopped
-
+/*
          // reset PIDs
          PidL.SetMode(MANUAL);
          PidR.SetMode(MANUAL);
@@ -75,6 +75,7 @@ void loop()
          PidR_In = PidR_Out = 0;
          PidL.SetMode(AUTOMATIC);
          PidR.SetMode(AUTOMATIC);
+*/
       }
 
       LedStatus = !LedStatus;
@@ -106,6 +107,7 @@ void loop()
          }
          break;
 
+/*
          case 2 : {  // Speed, drive motors via PID
             PidL_In = (DeltaEncL * 1000.0) / CfgLoopTime;    // ticks/sec
             PidR_In = (DeltaEncR * 1000.0) / CfgLoopTime;
@@ -123,6 +125,7 @@ void loop()
 //            Motors(PidL_Out + PidL_Sp * 1.1, PidR_Out + PidR_Sp * 1.1); // include feed forward
          }
          break;
+*/
       }
    }
    Command.Takt(Serial);  // Console command interpreter
@@ -192,17 +195,19 @@ void MsgCommands(int Param[])
       TimeOutCounter = CfgTimeOut;
    }
 
+   if (CmdMessages.Match("TIMING", 2)) {
+      CfgLoopTime = Param[0];    // millis
+      CfgTimeOut  = Param[1];    // loop times
+   }
+
+/*
    if (CmdMessages.Match("SPEED", 2)) {
       PidL_Sp        = Param[0];
       PidR_Sp        = Param[1];
       DriveMode      = 2; // Speed
       TimeOutCounter = CfgTimeOut;
    }
-
-   if (CmdMessages.Match("TIMING", 2)) {
-      CfgLoopTime = Param[0];    // millis
-      CfgTimeOut  = Param[1];    // loop times
-   }
+*/
 }
 
 //-----------------------------------------------------------------------------
@@ -236,13 +241,6 @@ void MyCommands(int Param[])
       TimeOutCounter = CfgTimeOut;
    }
 
-   if (Command.Match("speed", 2)) {
-      PidL_Sp        = Param[0];
-      PidR_Sp        = Param[1];
-      DriveMode      = 2; // Speed
-      TimeOutCounter = CfgTimeOut;
-   }
-
    if (Command.Match("encoders", 0)) {
       int Left, Right;
       EncodersRead (Left, Right);
@@ -255,6 +253,13 @@ void MyCommands(int Param[])
 
    if (Command.Match("timeout", 1)) {
       CfgTimeOut  = Param[0];    // loop times
+   }
+/*
+   if (Command.Match("speed", 2)) {
+      PidL_Sp        = Param[0];
+      PidR_Sp        = Param[1];
+      DriveMode      = 2; // Speed
+      TimeOutCounter = CfgTimeOut;
    }
 
    if (Command.Match("tunings", 3)) {
@@ -269,4 +274,5 @@ void MyCommands(int Param[])
       // print tunings
       printf("Tunings: %f %f %f\n", PidL.GetKp(),  PidL.GetKi(),  PidL.GetKd());
    }
+*/
 }

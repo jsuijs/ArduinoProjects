@@ -15,9 +15,11 @@ extern HardwareSerial Serial, Serial2;
 void MotorsInit();
 void Motors(int PwmL, int PwmR);
 
+/*
 extern PID PidL, PidR;
 extern double PidL_In, PidL_Out, PidL_Sp;
 extern double PidR_In, PidR_Out, PidR_Sp;
+*/
 
 void EncodersInit();
 void EncodersRead (int &Left, int &Right);
