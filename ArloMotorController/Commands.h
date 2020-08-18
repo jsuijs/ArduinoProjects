@@ -87,7 +87,8 @@ int TCommand::GetLine(int Value)
       if (Value < 0 ) return 0;
       if (Value == 0x0a) Value = 0x0d;
 
-      //printf("GL Value: %d (%c), State: %d, NrIndex: %d, ParamCount: %d\n", Value, Value, State, NrIndex, ParamCount);
+//      printf("GL Value: %d (%c), State: %d, NrIndex: %d, ParamCount: %d\n", Value, Value, State, NrIndex, ParamCount);
+      //printf("GL Value: %d (%c), State: %d\n", Value, Value, State);
 
       switch( State )   {
 
@@ -340,7 +341,7 @@ char TCommand::Takt(Stream &Ser)
          Ser.setTimeout(1);
       }
 
-      if (Ser.available() > 0) {
+      while (Ser.available() > 0) {
          int r = GetLine(Ser.read());
          if (r == 0) return 0;  // still reading line
 

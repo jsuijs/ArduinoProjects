@@ -125,7 +125,7 @@ void PID::SetTunings(double Kp, double Ki, double Kd, int POn)
  * Set Tunings using the last-rembered POn setting
  ******************************************************************************/
 void PID::SetTunings(double Kp, double Ki, double Kd){
-    SetTunings(Kp, Ki, Kd, pOn); 
+    SetTunings(Kp, Ki, Kd, pOn);
 }
 
 /* SetSampleTime(...) *********************************************************
@@ -204,7 +204,7 @@ void PID::SetControllerDirection(int Direction)
 {
    if(inAuto && Direction !=controllerDirection)
    {
-	    kp = (0 - kp);
+	   kp = (0 - kp);
       ki = (0 - ki);
       kd = (0 - kd);
    }

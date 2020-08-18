@@ -6,9 +6,9 @@ double PidL_In, PidL_Out, PidL_Sp;
 double PidR_In, PidR_Out, PidR_Sp;
 
 // Specify the links and initial tuning parameters
-double Kp = 2.0, Ki = 0.0, Kd = 0.0;
-PID PidL(&PidL_In, &PidL_Out, &PidL_Sp, Kp, Ki, Kd, DIRECT);
-PID PidR(&PidR_In, &PidR_Out, &PidR_Sp, Kp, Ki, Kd, DIRECT);
+double Kp = 0.2, Ki = 0.0, Kd = 0.0;
+PID PidL(&PidL_In, &PidL_Out, &PidL_Sp, Kp, Ki, Kd, P_ON_M, DIRECT);
+PID PidR(&PidR_In, &PidR_Out, &PidR_Sp, Kp, Ki, Kd, P_ON_M, DIRECT);
 
 //-----------------------------------------------------------------------------
 // MotorsInit -

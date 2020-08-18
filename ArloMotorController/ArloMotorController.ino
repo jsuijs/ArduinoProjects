@@ -37,6 +37,8 @@ void setup()
    MotorsInit();
 
    delay(100);  // wait for Arduino IDE to re-enable the terminal after programming...
+
+   printf("(RxBuf: %d, TxBuf: %d).\n", SERIAL_RX_BUFFER_SIZE, SERIAL_TX_BUFFER_SIZE);
    printf("ArloMotorController ready.\n");
 }
 
@@ -65,6 +67,14 @@ void loop()
          }
          DriveMode      = 0;
          TimeOutCounter = -1;  // we're stopped
+
+         // reset PIDs
+         PidL.SetMode(MANUAL);
+         PidR.SetMode(MANUAL);
+         PidL_In = PidL_Out = 0;
+         PidR_In = PidR_Out = 0;
+         PidL.SetMode(AUTOMATIC);
+         PidR.SetMode(AUTOMATIC);
       }
 
       LedStatus = !LedStatus;
@@ -80,6 +90,7 @@ void loop()
       EncoderR += DeltaEncR;
 
       SendEncoderMessage(EncoderL, EncoderR);
+
 
       //-----------------------------------------------------------------------
       // Drive stuff
@@ -102,65 +113,20 @@ void loop()
             PidL.Compute();
             PidR.Compute();
 
-            Motors(PidL_Out, PidR_Out);
+            printf("Pid In: %d %d, sp: %d %d, out: %d %d\n",
+               (int) PidL_In, (int) PidR_In,
+               (int) PidL_Sp, (int) PidR_Sp,
+               (int) PidL_Out, (int) PidR_Out);
+
+
+            Motors(PidL_Out, PidR_Out );
+//            Motors(PidL_Out + PidL_Sp * 1.1, PidR_Out + PidR_Sp * 1.1); // include feed forward
          }
          break;
       }
    }
-
    Command.Takt(Serial);  // Console command interpreter
    MessageReceiveTakt();  // Received messages interpreter
-}
-
-//-----------------------------------------------------------------------------
-// MyCommands - used / called by Command class.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-void MyCommands(int Param[])
-{
-   if (Command.Match("?", 0)) {
-      printf("ArloMotorController - see source for help on commands ;)\n");
-   }
-
-   if (Command.Match("motors", 2)) {
-      PwmL           = Param[0];
-      PwmR           = Param[1];
-      DriveMode      = 1; // PWM
-      TimeOutCounter = CfgTimeOut;
-   }
-
-   if (Command.Match("speed", 2)) {
-      PidL_Sp        = Param[0];
-      PidR_Sp        = Param[1];
-      DriveMode      = 2; // Speed
-      TimeOutCounter = CfgTimeOut;
-   }
-
-   if (Command.Match("encoders", 0)) {
-      int Left, Right;
-      EncodersRead (Left, Right);
-      printf("Encoders: %d %d\n", Left, Right);
-   }
-
-   if (Command.Match("looptime", 1)) {
-      CfgLoopTime = Param[0];    // millis
-   }
-
-   if (Command.Match("timeout", 1)) {
-      CfgTimeOut  = Param[0];    // loop times
-   }
-
-   if (Command.Match("tunings", 3)) {
-      // set tunings, same for both motors.
-      // Note: scaled by 100 since commands only support int's.
-      PidL.SetTunings(Param[0] / 100.0, Param[1] / 100.0, Param[2] / 100.0);
-      PidR.SetTunings(Param[0] / 100.0, Param[1] / 100.0, Param[2] / 100.0);
-   }
-
-   if (Command.Match("tunings", 0)) {
-      // print tunings
-      printf("Tunings: %f %f %f\n", PidL.GetKp(),  PidL.GetKi(),  PidL.GetKd());
-   }
 }
 
 //-----------------------------------------------------------------------------
@@ -251,4 +217,56 @@ void SendEncoderMessage(int EncL, int EncR)
    Serial2.print(" ");
    Serial2.print(EncR);
    Serial2.println((char) 0xC0);
+}
+
+//-----------------------------------------------------------------------------
+// MyCommands - used / called by Command class.
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+void MyCommands(int Param[])
+{
+   if (Command.Match("?", 0)) {
+      printf("ArloMotorController - see source for help on commands ;)\n");
+   }
+
+   if (Command.Match("motors", 2)) {
+      PwmL           = Param[0];
+      PwmR           = Param[1];
+      DriveMode      = 1; // PWM
+      TimeOutCounter = CfgTimeOut;
+   }
+
+   if (Command.Match("speed", 2)) {
+      PidL_Sp        = Param[0];
+      PidR_Sp        = Param[1];
+      DriveMode      = 2; // Speed
+      TimeOutCounter = CfgTimeOut;
+   }
+
+   if (Command.Match("encoders", 0)) {
+      int Left, Right;
+      EncodersRead (Left, Right);
+      printf("Encoders: %d %d\n", Left, Right);
+   }
+
+   if (Command.Match("looptime", 1)) {
+      CfgLoopTime = Param[0];    // millis
+   }
+
+   if (Command.Match("timeout", 1)) {
+      CfgTimeOut  = Param[0];    // loop times
+   }
+
+   if (Command.Match("tunings", 3)) {
+      // set tunings, same for both motors.
+      // Note: scaled by 100 since commands only support int's.
+      PidL.SetTunings(Param[0] / 100.0, Param[1] / 100.0, Param[2] / 100.0);
+      PidR.SetTunings(Param[0] / 100.0, Param[1] / 100.0, Param[2] / 100.0);
+      printf("Tunings: %f %f %f\n", PidL.GetKp(),  PidL.GetKi(),  PidL.GetKd());
+   }
+
+   if (Command.Match("tunings", 0)) {
+      // print tunings
+      printf("Tunings: %f %f %f\n", PidL.GetKp(),  PidL.GetKi(),  PidL.GetKd());
+   }
 }
