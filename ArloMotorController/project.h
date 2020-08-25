@@ -21,5 +21,8 @@ extern double PidL_In, PidL_Out, PidL_Sp;
 extern double PidR_In, PidR_Out, PidR_Sp;
 */
 
+extern int CfgLoopTime;   // millis
+
 void EncodersInit();
 void EncodersRead (int &Left, int &Right);
+extern int EncoderSpeedL, EncoderSpeedR;

@@ -91,7 +91,7 @@ void loop()
       EncoderR += DeltaEncR;
 
       SendEncoderMessage(EncoderL, EncoderR);
-
+      printf("EncoderDelta %d %d, Speed: %d %d\n", DeltaEncL*50, DeltaEncR*50, EncoderSpeedL, EncoderSpeedR);
 
       //-----------------------------------------------------------------------
       // Drive stuff
