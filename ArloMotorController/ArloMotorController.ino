@@ -39,7 +39,12 @@ void setup()
    delay(100);  // wait for Arduino IDE to re-enable the terminal after programming...
 
    printf("(RxBuf: %d, TxBuf: %d).\n", SERIAL_RX_BUFFER_SIZE, SERIAL_TX_BUFFER_SIZE);
-   printf("ArloMotorController ready.\n");
+
+#ifdef USE_PID
+   printf("PID enabled.\n");
+#endif
+
+   printf("ArloMotorController V0.07 ready.\n");
 }
 
 //-----------------------------------------------------------------------------
@@ -67,7 +72,8 @@ void loop()
          }
          DriveMode      = 0;
          TimeOutCounter = -1;  // we're stopped
-/*
+
+#ifdef USE_PID
          // reset PIDs
          PidL.SetMode(MANUAL);
          PidR.SetMode(MANUAL);
@@ -75,7 +81,7 @@ void loop()
          PidR_In = PidR_Out = 0;
          PidL.SetMode(AUTOMATIC);
          PidR.SetMode(AUTOMATIC);
-*/
+#endif
       }
 
       LedStatus = !LedStatus;
@@ -90,8 +96,12 @@ void loop()
       EncoderL += DeltaEncL;
       EncoderR += DeltaEncR;
 
-      SendEncoderMessage(EncoderL, EncoderR);
-      printf("EncoderDelta %d %d, Speed: %d %d\n", DeltaEncL*50, DeltaEncR*50, EncoderSpeedL, EncoderSpeedR);
+      SendMessage("ENCODER", EncoderL, EncoderR);
+      SendMessage("SPEED", EncoderSpeedL, EncoderSpeedR);
+
+      if (DeltaEncL || DeltaEncR) {
+         printf("EncoderDelta %d %d, Speed: %d %d\n", DeltaEncL*50, DeltaEncR*50, EncoderSpeedL, EncoderSpeedR);
+      }
 
       //-----------------------------------------------------------------------
       // Drive stuff
@@ -107,10 +117,10 @@ void loop()
          }
          break;
 
-/*
+#ifdef USE_PID
          case 2 : {  // Speed, drive motors via PID
-            PidL_In = (DeltaEncL * 1000.0) / CfgLoopTime;    // ticks/sec
-            PidR_In = (DeltaEncR * 1000.0) / CfgLoopTime;
+            PidL_In = EncoderSpeedL;    // ticks/sec
+            PidR_In = EncoderSpeedR;
 
             PidL.Compute();
             PidR.Compute();
@@ -121,11 +131,11 @@ void loop()
                (int) PidL_Out, (int) PidR_Out);
 
 
-            Motors(PidL_Out, PidR_Out );
+            Motors(PidL_Out, PidR_Out);
 //            Motors(PidL_Out + PidL_Sp * 1.1, PidR_Out + PidR_Sp * 1.1); // include feed forward
          }
          break;
-*/
+#endif
       }
    }
    Command.Takt(Serial);  // Console command interpreter
@@ -200,24 +210,25 @@ void MsgCommands(int Param[])
       CfgTimeOut  = Param[1];    // loop times
    }
 
-/*
+#ifdef USE_PID
    if (CmdMessages.Match("SPEED", 2)) {
       PidL_Sp        = Param[0];
       PidR_Sp        = Param[1];
       DriveMode      = 2; // Speed
       TimeOutCounter = CfgTimeOut;
    }
-*/
+#endif
 }
 
 //-----------------------------------------------------------------------------
 // SendEncoderMessage -
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-void SendEncoderMessage(int EncL, int EncR)
+void SendMessage(const char *MsgType, int EncL, int EncR)
 {
    Serial2.print((char) 0xC1);
-   Serial2.print("ENCODERS ");
+   Serial2.print(MsgType);
+   Serial2.print(" ");
    Serial2.print(EncL);
    Serial2.print(" ");
    Serial2.print(EncR);
@@ -254,7 +265,8 @@ void MyCommands(int Param[])
    if (Command.Match("timeout", 1)) {
       CfgTimeOut  = Param[0];    // loop times
    }
-/*
+
+#ifdef USE_PID
    if (Command.Match("speed", 2)) {
       PidL_Sp        = Param[0];
       PidR_Sp        = Param[1];
@@ -274,5 +286,5 @@ void MyCommands(int Param[])
       // print tunings
       printf("Tunings: %f %f %f\n", PidL.GetKp(),  PidL.GetKi(),  PidL.GetKd());
    }
-*/
+#endif
 }
