@@ -10,14 +10,14 @@ XValues = list()
 YValues = list()
 
 #------------------------------------------------------------------------------
-def PrintDistanceValues(Message):
+def DecodeFrame(Message):
    global OutFp
 
-   Numbers = Message[2:] # drop 55 aa
+   if ValidateFrame(Message) == False : return
 
-   Speed = Numbers[2] + 256 * Numbers[3]
-   StartAngle = (Numbers[4] + 256 * Numbers[5])  / 64 - 640
-   EndAngle  = (Numbers[30] + 256 * Numbers[31]) / 64 - 640
+   Speed = Message[4] + 256 * Message[5]
+   StartAngle = (Message[6] + 256 * Message[7])  / 64 - 640
+   EndAngle  = (Message[32] + 256 * Message[33]) / 64 - 640
    if EndAngle > StartAngle :
       DeltaAngle = (EndAngle - StartAngle) / 8
    else :
@@ -25,9 +25,9 @@ def PrintDistanceValues(Message):
 
    #print("StartAngle:", StartAngle, "End:", EndAngle, "Delta:", DeltaAngle);
    for i in range(0, 7) :
-      Base = 6 + i * 3
-      Distance = Numbers[Base + 0] + 256 * Numbers[Base + 1]
-      Quality  = Numbers[Base + 2]
+      Base = 8 + i * 3
+      Distance = Message[Base + 0] + 256 * Message[Base + 1]
+      Quality  = Message[Base + 2]
       Angle = StartAngle + DeltaAngle * i
       #print("D", Angle, Quality, Distance)
 
@@ -39,7 +39,76 @@ def PrintDistanceValues(Message):
          YValues.append(Y)
 
 #------------------------------------------------------------------------------
-def CollectFromSerial(SerialPort, SerialBaud, MaxNrSamples) :
+def ValidateFrame(InMessage) :
+
+   Message = InMessage.copy() # create copy, which we can empty for checksum calcuation
+
+   # Note: first 4 bytes of message must be 55 aa 03 08, which is validated by the checksum
+
+   if len(Message) != 36:
+      print("Error: invalid message lenght, not processed");
+      print(Message)
+      return False   # validation failed
+
+   # Checksum, included in the message
+   MsgChecksum = Message[34] + 256 * Message[35]
+
+   # Calculate checksum of message
+   MyCheck = 0
+   while len(Message) > 2 :
+      Low      = Message.pop(0)
+      High     = Message.pop(0)
+      MyCheck  = MyCheck * 2 + (Low  + 256 * High)
+
+   MyCheck &= 0x3FFFFFFF   # show 30 bit math is enough
+   MyCheck = (MyCheck & 0x7FFF) + int (MyCheck / 32768)
+   MyCheck &= 0x7FFF
+
+   if MyCheck == MsgChecksum : return True   # success
+
+   # checksum error
+   print("Checksum error (%04x vs %04x)" % (MyCheck, MsgChecksum))
+   print(InMessage)
+   return False   # validation failed
+
+#------------------------------------------------------------------------------
+import numpy as np
+import matplotlib.pyplot as plt
+
+def PlotGrap(ShowGraph, Picture) :
+
+   if len(XValues) == 0 :
+      print("PlotGraph: no samples to show");
+      return;
+
+   print("PlotGraph for %d points" % len(XValues))
+   x_array = np.array(XValues)
+   y_array = np.array(YValues)
+
+   fig, ax = plt.subplots()
+   ax.scatter(x_array, y_array, s=1, color='blue') # s is marker size
+
+   ax.set(xlabel='X', ylabel='Y',
+          title='Scatter plot')
+   ax.grid()
+
+   # scale both axes to same range
+   XRange  =  max(XValues) - min(XValues)
+   XCenter = (max(XValues) + min(XValues)) / 2
+   YRange  =  max(YValues) - min(YValues)
+   YCenter = (max(YValues) + min(YValues)) / 2
+   HRange  = max(XRange, YRange) / 2;
+   ax.axis(xmin=XCenter - HRange, xmax= XCenter + HRange, ymin=YCenter - HRange, ymax= YCenter + HRange)
+   #        self.a.axis(xmin=XCenter - HRange, xmax= XCenter + HRange, ymin=YCenter - HRange, ymax= YCenter + HRange)
+
+   if Picture != None:
+      fig.savefig(Picture + ".png")
+
+   if ShowGraph :
+      plt.show()
+
+#------------------------------------------------------------------------------
+def InputFromSerial(SerialPort, SerialBaud, MaxNrSamples) :
    global OutFp, RawFp
 
    # Open serial port
@@ -50,11 +119,14 @@ def CollectFromSerial(SerialPort, SerialBaud, MaxNrSamples) :
       ser.flushInput()
 
    except:
-      print("Failed to connect serial, ports on this system:")
       ports = list_ports.comports()
-      ports.sort()
-      for p in ports:
-         print(p)
+      if len(ports) > 0 :
+         print("Failed to connect serial, serial ports on this system:")
+         ports.sort()
+         for p in ports:
+            print(p)
+      else :
+         print("Failed to connect serial - NO serial ports on this system.")
       raise SystemExit(99)
 
    # port open, now read data
@@ -78,9 +150,10 @@ def CollectFromSerial(SerialPort, SerialBaud, MaxNrSamples) :
             # dump raw frames
             RawFp.write("".join("{:02x} ".format(x) for x in MsgData) + '\n')
 
-            # collect non-zero samples
-            PrintDistanceValues(MsgData)
-            if MaxNrSamples > 0 :  # non-zero means MaxNrSamples limits amount of data to be collected.
+            DecodeFrame(MsgData)
+
+            if MaxNrSamples > 0 :  # non-zero: limit amount of data to be collected.
+               # XValues contains all valid samples from DecodeFrame.
                if len(XValues) >= MaxNrSamples :
                   print("Sample-count limit received, done.")
                   break
@@ -97,38 +170,33 @@ def CollectFromSerial(SerialPort, SerialBaud, MaxNrSamples) :
 
    ser.dtr = False   # de-activate relais
 
-
 #------------------------------------------------------------------------------
-import numpy as np
-import matplotlib.pyplot as plt
+def InputFromFile(InFile, MaxNrSamples) :
 
-def PlotGrap() :
+   print("Read from file '%s'" % InFile)
 
-   if len(XValues) == 0 :
-      print("PlotGraph: no samples to show");
-      return;
+   with open(InFile) as fp:
 
-   x_array = np.array(XValues)
-   y_array = np.array(YValues)
+      while True:
+         line = fp.readline().strip().replace('\t', ' ')
+         if not line : break # file done => exit
 
-   fig, ax = plt.subplots()
-   ax.scatter(x_array, y_array, s=1, color='blue') # s is marker size
+         fields = line.split()
+         if len(fields) < 36 :
+            print("incomplete:", len(fields), "fields, msg: '%s'" % line)
+            print(fields)
+            continue   # incomplete message
 
-   ax.set(xlabel='X', ylabel='Y',
-          title='Scatter plot')
-   ax.grid()
+         #Numbers = [int(f, 16) for f in L.rstrip()[1:-1].split('][')]
+         Numbers = [int(f, 16) for f in fields]
 
-   # scale both axes to same range
-   XRange  =  max(XValues) - min(XValues)
-   XCenter = (max(XValues) + min(XValues)) / 2
-   YRange  =  max(YValues) - min(YValues)
-   YCenter = (max(YValues) + min(YValues)) / 2
-   HRange  = max(XRange, YRange) / 2;
-   ax.axis(xmin=XCenter - HRange, xmax= XCenter + HRange, ymin=YCenter - HRange, ymax= YCenter + HRange)
-   #        self.a.axis(xmin=XCenter - HRange, xmax= XCenter + HRange, ymin=YCenter - HRange, ymax= YCenter + HRange)
+         DecodeFrame(Numbers)
 
-   fig.savefig("test.png")
-   plt.show()
+         if MaxNrSamples > 0 :  # non-zero: limit amount of data to be collected.
+            # XValues contains all valid samples from DecodeFrame.
+            if len(XValues) >= MaxNrSamples :
+               print("Sample-count limit received, done.")
+               break
 
 #------------------------------------------------------------------------------
 # MAIN CODE
@@ -139,42 +207,42 @@ import argparse
 
 parser = argparse.ArgumentParser()
 #parser.add_argument('port', nargs='?', default='com15',  help='Com port (e.g. com15)')
-parser.add_argument('--port',    default='com15',     help='Com port (e.g. com15)')
-parser.add_argument('--baud',    default=115200,      help='Baudrate')
-parser.add_argument('--count',   default=200,         help='Exit after <count> samples, 0 = do not exit')
+parser.add_argument('-port',     default='com15',     help='specify Windows com-port (e.g. -port com15)')
+parser.add_argument('-baud',     default=115200,      help='specify baudrate')
+parser.add_argument('-count',    default=1000,        help='exit after <COUNT> samples, 0 = do not exit')
 
-parser.add_argument('--infile',                       help='Read raw data from file (do not use com-port)')
+parser.add_argument('-infile',                        help='read raw data from <INFILE> (do not use com-port)')
 
-parser.add_argument('--outfile',                      help='Save to this file')
-parser.add_argument('--rawfile',                      help='Output raw data to file')
+parser.add_argument('-outfile',                       help='write decoded data to <OUTFILE>')
+parser.add_argument('-rawfile',                       help='write raw data to <RAWFILE>')
 
-parser.add_argument('--graph',   action='store_true', help='Show graph of data')
+parser.add_argument('-graph',    action='store_true', help='show graph of data')
+parser.add_argument('-picture',                       help='save graph as <PICTURE>.png')
 
 args = parser.parse_args()
 
-print(args)
-
-# setup output-files
+# setup output-file for parsed data
 if args.outfile != None :
    print("Output in file '%s'" % args.outfile)
    OutFp = open(args.outfile, 'w+')
 else :
    OutFp = sys.stdout
 
-# setup output-file
+# setup output-file for raw data
+RawFp = open(os.devnull, 'w')   # default: write raw to null device
 if args.rawfile != None :
-   print("Output raw data to file '%s'" % args.rawfile)
-   RawFp = open(args.rawfile, 'w+')
-else :
-   # write raw to null device
-   RawFp = open(os.devnull, 'w')
+   if args.infile != None :
+      print("Warning: --outfile is ignored when --infile is specified.")
+   else :
+      print("Output raw data to file '%s'" % args.rawfile)
+      RawFp = open(args.rawfile, 'w+')
 
 # get the data
 if args.infile == None :
-   CollectFromSerial(args.port, args.baud, int(args.count))
+   InputFromSerial(args.port, args.baud, int(args.count))
 else :
-   print("todo read from file '%s'" % args.infile)
+   InputFromFile(args.infile, int(args.count))
 
 # show plot
-if args.graph :
-   PlotGrap()
+if args.graph or args.picture != None:
+   PlotGrap(args.graph, args.picture)
