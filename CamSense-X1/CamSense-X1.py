@@ -13,17 +13,22 @@ YValues = list()
 def DecodeFrame(Message):
    global OutFp
 
+   if args.debug :
+      OutFp.write("".join("{:02x} ".format(x) for x in Message) + '\n')
+
    if ValidateFrame(Message) == False : return
 
    Speed = Message[4] + 256 * Message[5]
    StartAngle = (Message[6] + 256 * Message[7])  / 64 - 640
    EndAngle  = (Message[32] + 256 * Message[33]) / 64 - 640
-   if EndAngle > StartAngle :
+   if EndAngle >= StartAngle :
       DeltaAngle = (EndAngle - StartAngle) / 8
    else :
       DeltaAngle = (EndAngle - (StartAngle - 360)) / 8
 
-   #print("StartAngle:", StartAngle, "End:", EndAngle, "Delta:", DeltaAngle);
+   if args.debug :
+      OutFp.write("StartAngle: %f, End: %f, Delta: %f\n" % (StartAngle, EndAngle, DeltaAngle))
+
    for i in range(0, 7) :
       Base = 8 + i * 3
       Distance = Message[Base + 0] + 256 * Message[Base + 1]
@@ -150,7 +155,7 @@ def InputFromSerial(SerialPort, SerialBaud, MaxNrSamples) :
             # dump raw frames
             RawFp.write("".join("{:02x} ".format(x) for x in MsgData) + '\n')
 
-            DecodeFrame(MsgData)
+            DecodeFrame(list(MsgData))
 
             if MaxNrSamples > 0 :  # non-zero: limit amount of data to be collected.
                # XValues contains all valid samples from DecodeFrame.
@@ -217,6 +222,7 @@ parser.add_argument('-outfile',                       help='write decoded data t
 parser.add_argument('-rawfile',                       help='write raw data to <RAWFILE>')
 
 parser.add_argument('-graph',    action='store_true', help='show graph of data')
+parser.add_argument('-debug',    action='store_true', help='more output')
 parser.add_argument('-picture',                       help='save graph as <PICTURE>.png')
 
 args = parser.parse_args()
