@@ -8,33 +8,42 @@ from time import sleep
 # lists to collect plot-values.
 XValues = list()
 YValues = list()
+FrameCount = 0
+StartupControl = True
 
 #------------------------------------------------------------------------------
 def DecodeFrame(Message):
-   global OutFp
+   global OutFp, StartupControl, FrameCount
 
+   FrameCount += 1
    if args.debug :
       OutFp.write("".join("{:02x} ".format(x) for x in Message) + '\n')
 
    if ValidateFrame(Message) == False : return
 
    Speed = Message[4] + 256 * Message[5]
-   StartAngle = (Message[6] + 256 * Message[7])  / 64 - 640
-   EndAngle  = (Message[32] + 256 * Message[33]) / 64 - 640
+   StartAngle = (Message[6]  + 256 * Message[7])  / 64 - 640
+   EndAngle   = (Message[32] + 256 * Message[33]) / 64 - 640
    if EndAngle >= StartAngle :
       DeltaAngle = (EndAngle - StartAngle) / 8
    else :
       DeltaAngle = (EndAngle - (StartAngle - 360)) / 8
 
    if args.debug :
-      OutFp.write("StartAngle: %f, End: %f, Delta: %f\n" % (StartAngle, EndAngle, DeltaAngle))
+      OutFp.write("Frame#: %d, StartAngle: %f, End: %f, Delta: %f\n" % (FrameCount, StartAngle, EndAngle, DeltaAngle))
 
+   if StartupControl :
+      if StartAngle <= 0 : return;  # skip frames until we receive a non-zero StartAngle (where -640 also counts as zero)
+      if args.debug :
+         OutFp.write(("StartupControl cleared at frame %d\n" % FrameCount))
+   StartupControl = False
+
+   MaxDistance = 0
    for i in range(0, 7) :
       Base = 8 + i * 3
       Distance = Message[Base + 0] + 256 * Message[Base + 1]
       Quality  = Message[Base + 2]
       Angle = StartAngle + DeltaAngle * i
-      #print("D", Angle, Quality, Distance)
 
       if Quality > 0 :
          X = math.cos(Angle / 57.3) * Distance
@@ -42,6 +51,20 @@ def DecodeFrame(Message):
          OutFp.write("%d\t%d\t%d\t%d\t%d\n" % (Angle, Quality, Distance, X, Y));
          XValues.append(X)
          YValues.append(Y)
+
+         if MaxDistance < Distance : MaxDistance = Distance # for extra validation
+
+   # some extra validations
+   if MaxDistance > 0 :
+      if DeltaAngle == 0 :
+         # Valid samples with DeltaDistance zero seem to be a Lidar bug (Checksum is correct)
+         print("ZeroSample Frame# %d\n" % (FrameCount))
+         print("".join("{:02x} ".format(x) for x in Message) + '\n')
+
+      if MaxDistance > 12000 :
+         # it looks like this distance is irregular large
+         print("MaxDistance %d, Frame# %d\n" % (MaxDistance, FrameCount))
+         print("".join("{:02x} ".format(x) for x in Message) + '\n')
 
 #------------------------------------------------------------------------------
 def ValidateFrame(InMessage) :
@@ -93,8 +116,7 @@ def PlotGrap(ShowGraph, Picture) :
    fig, ax = plt.subplots()
    ax.scatter(x_array, y_array, s=1, color='blue') # s is marker size
 
-   ax.set(xlabel='X', ylabel='Y',
-          title='Scatter plot')
+   ax.set(xlabel='X', ylabel='Y', title='Scatter plot')
    ax.grid()
 
    # scale both axes to same range
@@ -104,7 +126,6 @@ def PlotGrap(ShowGraph, Picture) :
    YCenter = (max(YValues) + min(YValues)) / 2
    HRange  = max(XRange, YRange) / 2;
    ax.axis(xmin=XCenter - HRange, xmax= XCenter + HRange, ymin=YCenter - HRange, ymax= YCenter + HRange)
-   #        self.a.axis(xmin=XCenter - HRange, xmax= XCenter + HRange, ymin=YCenter - HRange, ymax= YCenter + HRange)
 
    if Picture != None:
       fig.savefig(Picture + ".png")
@@ -183,7 +204,8 @@ def InputFromFile(InFile, MaxNrSamples) :
    with open(InFile) as fp:
 
       while True:
-         line = fp.readline().strip().replace('\t', ' ')
+         line = fp.readline().strip().replace('\t', ' ') # convert tab-separated to space-separated
+         line = line.replace('[', ' ').replace(']', ' ') # renaload hexlog conversion
          if not line : break # file done => exit
 
          fields = line.split()
@@ -248,6 +270,8 @@ if args.infile == None :
    InputFromSerial(args.port, args.baud, int(args.count))
 else :
    InputFromFile(args.infile, int(args.count))
+
+print("%d frames processed, %d values" % (FrameCount, len(XValues)))
 
 # show plot
 if args.graph or args.picture != None:
