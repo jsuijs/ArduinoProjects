@@ -113,7 +113,7 @@ def PlotGrap(ShowGraph, Picture) :
    x_array = np.array(XValues)
    y_array = np.array(YValues)
 
-   fig, ax = plt.subplots()
+   fig, ax = plt.subplots(figsize=(8,8))
    ax.scatter(x_array, y_array, s=1, color='blue') # s is marker size
 
    ax.set(xlabel='X', ylabel='Y', title='Scatter plot')
@@ -134,14 +134,15 @@ def PlotGrap(ShowGraph, Picture) :
       plt.show()
 
 #------------------------------------------------------------------------------
+
 def InputFromSerial(SerialPort, SerialBaud, MaxNrSamples) :
    global OutFp, RawFp
 
    # Open serial port
-   print("Connect to SerialPort %s at %d" % (SerialPort, SerialBaud))
+   print("Connect to SerialPort %s at %d" % (SerialPort, int(SerialBaud)))
 
    try:
-      ser = serial.Serial('\\\\.\\' + SerialPort, SerialBaud, timeout=0, write_timeout=0)
+      ser = serial.Serial('\\\\.\\' + SerialPort, int(SerialBaud), timeout=0, write_timeout=0)
       ser.flushInput()
 
    except:
@@ -155,12 +156,21 @@ def InputFromSerial(SerialPort, SerialBaud, MaxNrSamples) :
          print("Failed to connect serial - NO serial ports on this system.")
       raise SystemExit(99)
 
+   # ------------------------
    # port open, now read data
+   # ------------------------
 
-   InSync = False
-   ser.dtr = True   # activate relais, True is low at ttl level (not-dtr).
+   # Startup collects chars received before sync is achieved.
+   # Startup data might be useful in identifying different versions
+   # of CamSense units.
+   # Only relevant information when lidar starts when the script is
+   # running, e.g. through activation of power by DTR.
+   Startup = True
+   StartupByte = list()
 
-   #sleep(10)
+   InSync = False    # initially, not in sync
+   ser.dtr = True    # activate relais, True is low at ttl level (not-dtr)
+
    while True :
 
       # main loop - collect data from lidar & print.
@@ -186,8 +196,15 @@ def InputFromSerial(SerialPort, SerialBaud, MaxNrSamples) :
          else :
             # get in sync
             MsgData = ser.read(1)
+
             if MsgData[0] != 0x55 :
-               continue;
+               if Startup :
+                  StartupByte.append(MsgData[0])
+               continue
+
+            if Startup :
+               print("Startup bytes:" + "".join("{:02x} ".format(x) for x in StartupByte) + '\n')
+               Startup = False
 
             MsgData = ser.read(35)   # read reminder
             InSync = True
@@ -214,7 +231,6 @@ def InputFromFile(InFile, MaxNrSamples) :
             print(fields)
             continue   # incomplete message
 
-         #Numbers = [int(f, 16) for f in L.rstrip()[1:-1].split('][')]
          Numbers = [int(f, 16) for f in fields]
 
          DecodeFrame(Numbers)
@@ -236,7 +252,7 @@ parser = argparse.ArgumentParser()
 #parser.add_argument('port', nargs='?', default='com15',  help='Com port (e.g. com15)')
 parser.add_argument('-port',     default='com15',     help='specify Windows com-port (e.g. -port com15)')
 parser.add_argument('-baud',     default=115200,      help='specify baudrate')
-parser.add_argument('-count',    default=1000,        help='exit after <COUNT> samples, 0 = do not exit')
+parser.add_argument('-count',    default=2000,        help='exit after <COUNT> samples, 0 = do not exit')
 
 parser.add_argument('-infile',                        help='read raw data from <INFILE> (do not use com-port)')
 
@@ -265,7 +281,7 @@ if args.rawfile != None :
       print("Output raw data to file '%s'" % args.rawfile)
       RawFp = open(args.rawfile, 'w+')
 
-# get the data
+# get the data & process it.
 if args.infile == None :
    InputFromSerial(args.port, args.baud, int(args.count))
 else :
