@@ -39,17 +39,18 @@ This example shows how to seed first 4 (fixed) bytes and calculate the checksum 
 
 ### Helptext
 Just for reference, please check the script for the most up-to-date version.
-
-> usage: CamSense-X1.py [-h] [-port PORT] [-baud BAUD] [-count COUNT] [-infile INFILE] [-outfile OUTFILE]
->                     [-rawfile RAWFILE] [-graph] [-debug] [-picture PICTURE]
->optional arguments:
->  -h, --help        show this help message and exit
->  -port PORT        specify Windows com-port (e.g. -port com15)
->  -baud BAUD        specify baudrate
->  -count COUNT      exit after <COUNT> samples, 0 = do not exit
->  -infile INFILE    read raw data from <INFILE> (do not use com-port)
->  -outfile OUTFILE  write decoded data to <OUTFILE>
->  -rawfile RAWFILE  write raw data to <RAWFILE>
->  -graph            show graph of data
->  -debug            more output
->  -picture PICTURE  save graph as <PICTURE>.png
+```
+usage: CamSense-X1.py [-h] [-port PORT] [-baud BAUD] [-count COUNT] [-infile INFILE] [-outfile OUTFILE]
+                     [-rawfile RAWFILE] [-graph] [-debug] [-picture PICTURE]
+optional arguments:
+  -h, --help        show this help message and exit
+  -port PORT        specify Windows com-port (e.g. -port com15)
+  -baud BAUD        specify baudrate
+  -count COUNT      exit after <COUNT> samples, 0 = do not exit
+  -infile INFILE    read raw data from <INFILE> (do not use com-port)
+  -outfile OUTFILE  write decoded data to <OUTFILE>
+  -rawfile RAWFILE  write raw data to <RAWFILE>
+  -graph            show graph of data
+  -debug            more output
+  -picture PICTURE  save graph as <PICTURE>.png
+```
