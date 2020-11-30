@@ -88,9 +88,8 @@ def ValidateFrame(InMessage) :
       High     = Message.pop(0)
       MyCheck  = MyCheck * 2 + (Low  + 256 * High)
 
-   MyCheck &= 0x3FFFFFFF   # show 30 bit math is enough
-   MyCheck = (MyCheck & 0x7FFF) + int (MyCheck / 32768)
-   MyCheck &= 0x7FFF
+   #MyCheck &= 0x3FFFFFFF   # show 30 bit math is enough
+   MyCheck = (MyCheck + int (MyCheck / 32768)) & 0x7FFF
 
    if MyCheck == MsgChecksum : return True   # success
 
