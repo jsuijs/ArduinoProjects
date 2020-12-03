@@ -58,13 +58,13 @@ def DecodeFrame(Message):
    if MaxDistance > 0 :
       if DeltaAngle == 0 :
          # Valid samples with DeltaDistance zero seem to be a Lidar bug (Checksum is correct)
-         print("ZeroSample Frame# %d\n" % (FrameCount))
+         print("ZeroSample Frame# %d" % (FrameCount))
          print("".join("{:02x} ".format(x) for x in Message) + '\n')
 
-      if MaxDistance > 12000 :
+      if MaxDistance > 6000 :
          # it looks like this distance is irregular large
-         print("MaxDistance %d, Frame# %d\n" % (MaxDistance, FrameCount))
-         print("".join("{:02x} ".format(x) for x in Message) + '\n')
+         print("MaxDistance %d, Frame# %d" % (MaxDistance, FrameCount))
+         print("".join("{:02x} ".format(x) for x in Message))
 
 #------------------------------------------------------------------------------
 def ValidateFrame(InMessage) :
