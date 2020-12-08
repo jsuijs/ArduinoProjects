@@ -7,10 +7,12 @@
 HardwareSerial Serial(USART1);
 HardwareSerial Serial2(USART2);
 
+// Function prototypes (might be superfluous for Arduino...)
 void MyCommands(int Number[]);
-TCommand Command(MyCommands);
-
 void MsgCommands(int Param[]);
+
+// Command interpreters
+TCommand Command(MyCommands);
 TCommand CmdMessages(MsgCommands);
 
 // global parameters (set by commands/messages, used by loop)
