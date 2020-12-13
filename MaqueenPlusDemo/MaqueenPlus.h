@@ -108,8 +108,6 @@ extern "C" void SystemClock_Config(void)
 
 //-----------------------------------------------------------------------------
 #include <HardwareTimer.h>
-HardwareTimer TimerEncL(MAQUEENPLUS_TIMER_ENCL);
-HardwareTimer TimerEncR(MAQUEENPLUS_TIMER_ENCR);
 
 class TMaqueenPlus
 {
@@ -132,11 +130,13 @@ public:
    void RgbLeds(int Color);
 
 private:
+   HardwareTimer TimerEncL, TimerEncR;
+
    int RawEncoderLeft, RawEncoderRight;
    int EncoderLeft, EncoderRight;
 };
 
-TMaqueenPlus::TMaqueenPlus()
+TMaqueenPlus::TMaqueenPlus() : TimerEncL(MAQUEENPLUS_TIMER_ENCL), TimerEncR(MAQUEENPLUS_TIMER_ENCR)
    {
       //-----------------------------------------------------------------------
       // Init generic IO
@@ -215,9 +215,6 @@ TMaqueenPlus::TMaqueenPlus()
 //-----------------------------------------------------------------------------
 void TMaqueenPlus::Motors(int PwmL, int PwmR)
    {
-
-
-      printf("Motors %d %d\n", PwmL, PwmR);
       // set PWM & direction pin for LEFT motor
       int Pwm = PwmL;  // flip direction here if required.
       if (Pwm >=0) {
@@ -275,9 +272,6 @@ void TMaqueenPlus::EncodersRead(int &Left, int &Right)
       // assign return-values
       Left  = EncoderLeft;
       Right = EncoderRight;
-
-      printf("Enc %d %d - %d %d\n", LeftDelta, RightDelta, Left, Right);
-
    }
 
 //-----------------------------------------------------------------------------
