@@ -230,15 +230,21 @@ def InputFromFile(InFile, MaxNrSamples) :
             print(fields)
             continue   # incomplete message
 
-         Numbers = [int(f, 16) for f in fields]
+         while len(fields) > 35 :   # to handle single-line dumps of RenaLoad
+            if fields[0] != '55' :
+               fields = fields[1:]
+               continue
 
-         DecodeFrame(Numbers)
 
-         if MaxNrSamples > 0 :  # non-zero: limit amount of data to be collected.
-            # XValues contains all valid samples from DecodeFrame.
-            if len(XValues) >= MaxNrSamples :
-               print("Sample-count limit received, done.")
-               break
+            Numbers = [int(f, 16) for f in fields[:36]]
+            fields = fields[36:]
+            DecodeFrame(Numbers)
+
+            if MaxNrSamples > 0 :  # non-zero: limit amount of data to be collected.
+               # XValues contains all valid samples from DecodeFrame.
+               if len(XValues) >= MaxNrSamples :
+                  print("Sample-count limit received, done.")
+                  break
 
 #------------------------------------------------------------------------------
 # MAIN CODE
