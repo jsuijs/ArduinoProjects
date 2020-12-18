@@ -6,8 +6,6 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //-----------------------------------------------------------------------------
 
-// https://github.com/stm32duino/wiki/wiki/API
-
 //-----------------------------------------------------------------------------
 // MaqueenPlus hardware definitions
 //-----------------------------------------------------------------------------
@@ -53,6 +51,42 @@
 #define MAQUEENPLUS_PIN_SERVO_S1       PB6   // Usart1 tx (remap)
 #define MAQUEENPLUS_PIN_SERVO_S2       PB7   // Usart1 rx (remap)
 #define MAQUEENPLUS_PIN_SERVO_S3       PB8
+
+//-----------------------------------------------------------------------------
+#include <HardwareTimer.h>
+
+class TMaqueenPlus
+{
+public:
+	TMaqueenPlus();
+
+   void EncodersReadDelta(int &Left, int &Right);
+   void EncodersRead(int &Left, int &Right);
+   void EncodersReset() { EncoderLeft = 0; EncoderRight = 0; }
+
+   int  LineSensorRead(int Nr);
+   int  LineSensorBits();
+   void SetLineSensorLeds(int Bits);
+
+   bool CalcKey() { return (digitalRead(MAQUEENPLUS_PIN_CALC_KEY) == false); }
+
+   void Motors(int PwmL, int PwmR);
+   void Led(int Nr, bool On);
+
+   void RgbLeft(int Color);
+   void RgbRight(int Color);
+   void RgbLeds(int ColorL, int ColorR);
+   void RgbLeds(int Color);
+
+private:
+   HardwareTimer TimerEncL, TimerEncR;
+
+   int RawEncoderLeft, RawEncoderRight;
+   int EncoderLeft, EncoderRight;
+};
+//-----------------------------------------------------------------------------
+
+// https://github.com/stm32duino/wiki/wiki/API
 
 //-----------------------------------------------------------------------------
 // SystemClock_Config - HSI oscillator, 36 MHz
@@ -107,35 +141,9 @@ extern "C" void SystemClock_Config(void)
 #endif
 
 //-----------------------------------------------------------------------------
-#include <HardwareTimer.h>
-
-class TMaqueenPlus
-{
-public:
-	TMaqueenPlus();
-
-   void EncodersReadDelta(int &Left, int &Right);
-   void EncodersRead(int &Left, int &Right);
-   void EncodersReset() { EncoderLeft = 0; EncoderRight = 0; }
-
-   int  LineSensorRead(int Nr);
-   bool CalcKey() { return (digitalRead(MAQUEENPLUS_PIN_CALC_KEY) == false); }
-
-   void Motors(int PwmL, int PwmR);
-   void Led(int Nr, bool On);
-
-   void RgbLeft(int Color);
-   void RgbRight(int Color);
-   void RgbLeds(int ColorL, int ColorR);
-   void RgbLeds(int Color);
-
-private:
-   HardwareTimer TimerEncL, TimerEncR;
-
-   int RawEncoderLeft, RawEncoderRight;
-   int EncoderLeft, EncoderRight;
-};
-
+// TMaqueenPlus::TMaqueenPlus - Constructor
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 TMaqueenPlus::TMaqueenPlus() : TimerEncL(MAQUEENPLUS_TIMER_ENCL), TimerEncR(MAQUEENPLUS_TIMER_ENCR)
    {
       //-----------------------------------------------------------------------
@@ -216,7 +224,7 @@ TMaqueenPlus::TMaqueenPlus() : TimerEncL(MAQUEENPLUS_TIMER_ENCL), TimerEncR(MAQU
 void TMaqueenPlus::Motors(int PwmL, int PwmR)
    {
       // set PWM & direction pin for LEFT motor
-      int Pwm = PwmL;  // flip direction here if required.
+      int Pwm = constrain(PwmL, -255, 255);  // flip direction here if required.
       if (Pwm >=0) {
          analogWrite(MAQUEENPLUS_PIN_MOTOR_L_INA, 255);
          analogWrite(MAQUEENPLUS_PIN_MOTOR_L_INB, 256-Pwm);
@@ -228,7 +236,7 @@ void TMaqueenPlus::Motors(int PwmL, int PwmR)
       delayMicroseconds(10);
 
       // set PWM & direction pin for RIGHT motor
-      Pwm = PwmR;  // flip direction here if required.
+      Pwm = constrain(PwmR, -255, 255);;  // flip direction here if required.
       if (Pwm >=0) {
          analogWrite(MAQUEENPLUS_PIN_MOTOR_R_INA, 255);
          analogWrite(MAQUEENPLUS_PIN_MOTOR_R_INB, 256-Pwm);
@@ -241,6 +249,7 @@ void TMaqueenPlus::Motors(int PwmL, int PwmR)
 //-----------------------------------------------------------------------------
 // TMaqueenPlus::EncodersReadDelta - read encoder and put *DELTA* in vars.
 //-----------------------------------------------------------------------------
+// About 0.15mm / tick
 //-----------------------------------------------------------------------------
 void TMaqueenPlus::EncodersReadDelta(int &Left, int &Right)
    {
@@ -260,6 +269,7 @@ void TMaqueenPlus::EncodersReadDelta(int &Left, int &Right)
 //-----------------------------------------------------------------------------
 // TMaqueenPlus::EncodersReadDelta - read encoder and put *DELTA* in vars.
 //-----------------------------------------------------------------------------
+// About 0.15mm / tick
 //-----------------------------------------------------------------------------
 void TMaqueenPlus::EncodersRead(int &Left, int &Right)
    {
@@ -346,7 +356,7 @@ void TMaqueenPlus::RgbLeds(int Color)
    }
 
 //-----------------------------------------------------------------------------
-// TMaqueenPlus::LineSensorRead -
+// TMaqueenPlus::LineSensorRead - returns analog value, lower value => darker
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 int TMaqueenPlus::LineSensorRead(int Nr)
@@ -362,4 +372,45 @@ int TMaqueenPlus::LineSensorRead(int Nr)
 
       printf("Unknown Linesensor#: %d\n", Nr);
       return -1;
+   }
+
+//-----------------------------------------------------------------------------
+// TMaqueenPlus::LineSensorBits - One bit per linesensor. One => black
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+int TMaqueenPlus::LineSensorBits()
+   {  int Bits = 0;
+      int Value[6];
+
+      Value[0] = analogRead(MAQUEENPLUS_PIN_SENSOR_L3);
+      Value[1] = analogRead(MAQUEENPLUS_PIN_SENSOR_L2);
+      Value[2] = analogRead(MAQUEENPLUS_PIN_SENSOR_L1);
+      Value[3] = analogRead(MAQUEENPLUS_PIN_SENSOR_R1);
+      Value[4] = analogRead(MAQUEENPLUS_PIN_SENSOR_R2);
+      Value[5] = analogRead(MAQUEENPLUS_PIN_SENSOR_R3);
+
+      if (Value[0] < 500) Bits |= 0x01;
+      if (Value[1] < 500) Bits |= 0x02;
+      if (Value[2] < 500) Bits |= 0x04;
+      if (Value[3] < 500) Bits |= 0x08;
+      if (Value[4] < 500) Bits |= 0x10;
+      if (Value[5] < 500) Bits |= 0x20;
+
+//      printf("LS %3d %3d %3d %3d %3d %3d\n", Value[0], Value[1], Value[2], Value[3], Value[4], Value[5]);
+
+      return Bits;
+   }
+
+//-----------------------------------------------------------------------------
+// TMaqueenPlus::SetLineSensorLeds - Works on LineSensorBits output
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+void TMaqueenPlus::SetLineSensorLeds(int Bits)
+   {
+      digitalWrite(MAQUEENPLUS_PIN_LED_L3, (Bits & 0x01) == 0);
+      digitalWrite(MAQUEENPLUS_PIN_LED_L2, (Bits & 0x02) == 0);
+      digitalWrite(MAQUEENPLUS_PIN_LED_L1, (Bits & 0x04) == 0);
+      digitalWrite(MAQUEENPLUS_PIN_LED_R1, (Bits & 0x08) == 0);
+      digitalWrite(MAQUEENPLUS_PIN_LED_R2, (Bits & 0x10) == 0);
+      digitalWrite(MAQUEENPLUS_PIN_LED_R3, (Bits & 0x20) == 0);
    }
