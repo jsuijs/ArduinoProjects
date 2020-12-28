@@ -6,6 +6,7 @@ from serial.tools import list_ports
 from time import sleep
 
 # lists to collect plot-values.
+DValues = list()
 XValues = list()
 YValues = list()
 FrameCount = 0
@@ -46,13 +47,15 @@ def DecodeFrame(Message):
       Angle = StartAngle + DeltaAngle * i
 
       if Quality > 0 :
-         X = math.cos(Angle / 57.3) * Distance
-         Y = math.sin(Angle / 57.3) * Distance * -1
-         OutFp.write("%d\t%d\t%d\t%d\t%d\n" % (Angle, Quality, Distance, X, Y));
-         XValues.append(X)
-         YValues.append(Y)
+         if DeltaAngle > 0 :
+            X = math.cos(Angle / 57.3) * Distance
+            Y = math.sin(Angle / 57.3) * Distance * -1
+            OutFp.write("%d\t%d\t%d\t%d\t%d\n" % (Angle, Quality, Distance, X, Y));
+            DValues.append(Distance)
+            XValues.append(X)
+            YValues.append(Y)
 
-         if MaxDistance < Distance : MaxDistance = Distance # for extra validation
+            if MaxDistance < Distance : MaxDistance = Distance # for extra validation
 
    # some extra validations
    if MaxDistance > 0 :
@@ -292,7 +295,7 @@ if args.infile == None :
 else :
    InputFromFile(args.infile, int(args.count))
 
-print("%d frames processed, %d values" % (FrameCount, len(XValues)))
+print("%d frames processed, %d values, average distance: %d" % (FrameCount, len(DValues), int(sum(DValues) / len(DValues))))
 
 # show plot
 if args.graph or args.picture != None:
