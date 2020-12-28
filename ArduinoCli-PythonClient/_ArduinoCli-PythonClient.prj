@@ -1,0 +1,44 @@
+[Project ID]
+Signature=UE Proj: v.1
+Unicode=2
+[Project Information]
+Use Relative Directory=1
+Relative to Project File=1
+Include Sub Directories=1
+Project TagfileU=
+Project WordfileU=
+Project TpFileU=
+FilterU=
+Create Tagfile=0
+[FilesU]
+0=commands+AFw-upload+AF8-pb2.py
+1=daemon.bat
+2=commands+AFw-upload.proto
+3=commands+AFw-lib+AF8-pb2+AF8-grpc.py
+4=commands+AFw-lib+AF8-pb2.py
+5=commands+AFw-lib.proto
+6=commands+AFw-core+AF8-pb2+AF8-grpc.py
+7=commands+AFw-core+AF8-pb2.py
+8=commands+AFw-core.proto
+9=commands+AFw-compile+AF8-pb2+AF8-grpc.py
+10=commands+AFw-compile+AF8-pb2.py
+11=commands+AFw-compile.proto
+12=commands+AFw-common+AF8-pb2+AF8-grpc.py
+13=commands+AFw-common+AF8-pb2.py
+14=commands+AFw-common.proto
+15=commands+AFw-commands+AF8-pb2+AF8-grpc.py
+16=commands+AFw-commands+AF8-pb2.py
+17=commands+AFw-commands.proto
+18=commands+AFw-board+AF8-pb2+AF8-grpc.py
+19=commands+AFw-board+AF8-pb2.py
+20=commands+AFw-upload+AF8-pb2+AF8-grpc.py
+21=client.py
+22=cli.bat
+23=gen.bat
+24=hello+AFw-hello.ino
+25=debug+AFw-debug.proto
+26=monitor+AFw-monitor.proto
+27=settings+AFw-settings.proto
+28=commands+AFw-board.proto
+29=settings+AFw-settings+AF8-pb2+AF8-grpc.py
+30=settings+AFw-settings+AF8-pb2.py

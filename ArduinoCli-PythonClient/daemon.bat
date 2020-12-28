@@ -1,0 +1,1 @@
+@c:\RobotLib\Tools\Arduino\arduino-cli.exe daemon --verbose %*
