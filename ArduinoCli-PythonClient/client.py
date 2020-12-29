@@ -40,6 +40,15 @@ def WarnWarn():
 #  * Some (most?) rcp definition have a 'stream' return-type, e.g. rpc Init(InitReq) returns (stream InitResp) {}
 #    See 'def Compile' of how these can be implemented in Python.
 
+import time
+StartTime = time.perf_counter()
+PrevTime  = time.perf_counter()
+def Stamp(Tag) :
+   global PrevTime, StartTime
+   Now = time.perf_counter()
+   print("Stamp %s - step: %f sec, Total: %f sec" % (Tag, Now - PrevTime, Now-StartTime))
+   PrevTime = Now
+
 class ArduinoCliClient:
 
    #---------------------------------------------------------------------------
@@ -50,19 +59,17 @@ class ArduinoCliClient:
       self.channel         = grpc.insecure_channel('localhost:50051')
       self.client          = commands_pb2_grpc.ArduinoCoreStub(self.channel)
       self.settingsClient  = settings_pb2_grpc.SettingsStub(self.channel)
+      Stamp("SettingsClient")
 
       try:
          self.instance        =  self.InitInstance()
       except:
          print("Error in InitInstance... Is the daemon running?")
          sys.exit(1)
+      Stamp("InitInstance")
 
       self.UpdateIndex()
-      #print("todo: callUpdateIndex")
-      #     // With a brand new instance, the first operation should always be updating
-      #     // the index.
-      #     log.Println("calling UpdateIndex")
-      #     callUpdateIndex(client, instance)
+      Stamp("UPdateIndex");
 
    # Ask Deamon to create instance and get its ID
    def InitInstance(self) :
@@ -71,28 +78,29 @@ class ArduinoCliClient:
 
       # process data, we receive from stream
       for r in rstream:
+         Unexptected = True
          if hasattr(r, 'instance'):
             print("Instance:", r.instance)
             instance = r.instance
-            continue
+            Unexptected = False
 
          if hasattr(r, 'platforms_index_errors'):
             print("InstanceInit platforms_index_errors:", r.platforms_index_errors)
-            continue
+            Unexptected = False
 
          if hasattr(r, 'libraries_index_error'):
             print("InstanceInit libraries_index_error:", r.libraries_index_error)
-            continue
+            Unexptected = False
 
          if hasattr(r, 'download_progress'):
             print("InstanceInit download_progress:", r.download_progress)
-            continue
+            Unexptected = False
 
          if hasattr(r, 'task_progress'):
             print("InstanceInit task_progress:", r.task_progress)
-            continue
+            Unexptected = False
 
-         print("InstanceInit !!unexpected!!", r)
+         if Unexptected: print("InstanceInit !!unexpected attribute!!", r)
 
       return instance
 
@@ -232,7 +240,6 @@ class ArduinoCliClient:
 #         code = rpc_error_call.code()
 #         print(code, file=sys.stderr)
          details = rpc_error_call.details()
-#         print("err='RPCError InitWallet'")
          print("BoardAttach ERROR: " + details)
          return 'error'
 
@@ -280,29 +287,44 @@ class ArduinoCliClient:
       # repeated  ExecutableSectionSize executable_sections_size = 5;
       #                                         // The size of the executable split by sections
 
-      for r in rstream:
-         if hasattr(r, 'out_stream'):
-            if self.Verbose > 0 :
-               print(r.out_stream.decode("utf-8"), end='')
-            continue
+      try:
+         for r in rstream:
+            Unexptected = True
+            if hasattr(r, 'out_stream'):
+               if self.Verbose > 0 :
+                  print(r.out_stream.decode("utf-8"), end='')
+               Unexptected = False
 
-         if hasattr(r, 'err_stream'):
-            print("err", r.err_stream)
-            continue
+            if hasattr(r, 'err_stream'):
+               ErrorString = r.err_stream.decode("utf-8")
+               if ErrorString != '' :
+                  print("ERR#", ErrorString, end='')
+               Unexptected = False
 
-         if hasattr(r, 'build_path'):
-            print("build#", r.build_path)
-            continue
+            if hasattr(r, 'build_path'):
+               if len(r.build_path) > 0 :
+                  print("build#", r.build_path)
+               Unexptected = False
 
-         if hasattr(r, 'used_libraries'):
-            print("lib#", r.used_libraries)
-            continue
+            if hasattr(r, 'used_libraries'):
+               if len(r.used_libraries) > 0 :
+                  print("lib#", r.used_libraries)
+               Unexptected = False
 
-         if hasattr(r, 'executable_sections_size'):
-            print("exe#", r.executable_sections_size)
-            continue
+            if hasattr(r, 'executable_sections_size'):
+               if len(r.executable_sections_size) > 0 :
+                     print("exe#", r.executable_sections_size)
+               Unexptected = False
 
-         print("Compile !!unexpected!!", r)
+            if Unexptected : print("Compile !!unexpected Attribute!!", r)
+
+      except grpc.RpcError as rpc_error_call:
+#         code = rpc_error_call.code()
+#         print(code, file=sys.stderr)
+         details = rpc_error_call.details()
+         print("Compile ERROR: " + details)
+         return 'error'
+
       print()
 
    #---------------------------------------------------------------------------
@@ -363,18 +385,18 @@ class ArduinoCliClient:
       print("UploadReq: >", p, "<")
       rstream = self.client.Upload(p)
 
-
       for r in rstream:
+         Unexptected = True
          if hasattr(r, 'out_stream'):
             if self.Verbose > 0 :
                print(r.out_stream.decode("utf-8"), end='')
-            continue
+            Unexptected = False
 
          if hasattr(r, 'err_stream'):
             print("err", r.err_stream)
-            continue
+            Unexptected = False
 
-         print("Upload !!unexpected!!", r)
+         if Unexptected : print("Upload !!unexpected attribute!!", r)
       print()
 
    #---------------------------------------------------------------------------
@@ -457,26 +479,46 @@ class ArduinoCliClient:
 
 if __name__ == '__main__':
 
+   Stamp("Programstart")
+
+#   TestSketchPath = 'C:\\GitHub\\ArduinoProjects\\ArduinoCli-PythonClient\\hello'
+#   TestFqbn       = 'arduino:avr:nano:cpu=atmega328old'
+#   TestPort       = 'COM13'
+
+   TestSketchPath = 'C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1'
+   TestFqbn       = 'STM32:stm32:GenF4:pnum=DIYMORE_F407VGT,upload_method=swdMethod,xserial=none,usb=none,xusb=FS,opt=osstd,rtlib=nano'
+   TestPort       = ''
+
    # create instance & setup client(s)
    Acc = ArduinoCliClient()
+   Stamp("Create ArduinoCliClient")
 
 #   print("calling Version")
 #   print(Acc.Version())    # get version of Arduino-CLI
 
 #   print("calling LoadSketch")
-#   print(Acc.LoadSketch('C:\\GitHub\\ArduinoProjects\\ArduinoCli-PythonClient\\hello'))
+#   print(Acc.LoadSketch(TestSketchPath))
 
 #   print("calling BoardDetails")
-#   print(Acc.BoardsDetails('arduino:avr:uno'))
+#   print(Acc.BoardsDetails(TestFqbn ))
 
 #   print("calling BoardAttach")
-#   print(Acc.BoardAttach('C:\\GitHub\\ArduinoProjects\\ArduinoCli-PythonClient\\hello', 'COM13'))
+#   print(Acc.BoardAttach(TestSketchPath, TestPort))
 
-#   print("calling Compile")
-#   print(Acc.Compile(sketch_path='C:\\GitHub\\ArduinoProjects\\ArduinoCli-PythonClient\\hello', fqbn='arduino:avr:nano:cpu=atmega328old'))
 
-#   print("calling Upload")
-#   print(Acc.Upload(fqbn='arduino:avr:nano:cpu=atmega328old', sketch_path='C:\\GitHub\\ArduinoProjects\\ArduinoCli-PythonClient\\hello', port='COM13'))
+   # TODO: cwd op project directory zetten,anders wordt link_opt.h blijbaar niet meegelinkt...
+   # Testen met de cli (zonder daemon) geeft wel deze info; makkelijker maken om
+   # de commando's voor de cli te genereren uit dit programma (of documenteren..)
+   # c:\RobotLib\Tools\Arduino\arduino-cli compile -b STM32:stm32:GenF4:pnum=DIYMORE_F407VGT,upload_method=swdMethod,xserial=none,usb=none,xusb=FS,opt=osstd,rtlib=nano C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1
+   print("calling Compile")
+   r = Acc.Compile(sketch_path=TestSketchPath, fqbn=TestFqbn, clean=False)
+   Stamp("Compile")
+   print(r)
+   if r != 'succes' : sys.exit(1)
+
+   print("calling Upload")
+   print(Acc.Upload(fqbn=TestFqbn, sketch_path=TestSketchPath, port=TestPort))
+   Stamp("Upload")
 
 
    # todo   // Use SetValue to configure the arduino-cli directories.
