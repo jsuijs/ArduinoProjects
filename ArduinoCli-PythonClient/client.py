@@ -1,4 +1,4 @@
-import sys
+import sys, json
 
 import grpc
 
@@ -85,11 +85,13 @@ class ArduinoCliClient:
             Unexptected = False
 
          if hasattr(r, 'platforms_index_errors'):
-            print("InstanceInit platforms_index_errors:", r.platforms_index_errors)
+            if len(r.platforms_index_errors) > 0 :
+               print("InstanceInit platforms_index_errors:", r.platforms_index_errors)
             Unexptected = False
 
          if hasattr(r, 'libraries_index_error'):
-            print("InstanceInit libraries_index_error:", r.libraries_index_error)
+            if r.libraries_index_error != '' :
+               print("InstanceInit libraries_index_error:", r.libraries_index_error)
             Unexptected = False
 
          if hasattr(r, 'download_progress'):
@@ -129,7 +131,6 @@ class ArduinoCliClient:
    def Version(self) :
       response = self.client.Version(commands_pb2.VersionReq())
       return response.version
-      WarnWarn()
 
    #---------------------------------------------------------------------------
    # LoadSketch -
@@ -137,28 +138,101 @@ class ArduinoCliClient:
       return self.client.LoadSketch(commands_pb2.LoadSketchReq(sketch_path=sketch_path))
 
    #---------------------------------------------------------------------------
-   #   // Use SetValue to configure the arduino-cli directories.   log.Println("calling SetValue")
-   #   callSetValue(settingsClient)
-   def SetValue(self) :
-      WarnWarn()
-
+   # GetAll -
    #---------------------------------------------------------------------------
-   #   // List all the settings.   log.Println("calling GetAll()")
-   #   callGetAll(settingsClient)
+   #  rpc GetAll(GetAllRequest) returns (RawData);
+   #
+   #  message GetAllRequest {}
+   #
+   #  message RawData {
+   #
+   #     // The settings, in JSON format.
+   #     string jsonData = 1;
+   #
    def GetAll(self) :
-      WarnWarn()
+      response = self.settingsClient.GetAll(settings_pb2.GetAllRequest())
+      return json.loads(response.jsonData)
 
    #---------------------------------------------------------------------------
-   #   // Merge applies multiple settings values at once.   log.Println("calling Merge(`{\"foo\": \"bar\", \"daemon\":{\"port\":\"422\"}}`)")
-   #   callMerge(settingsClient)
-   def Merge(self) :
-      WarnWarn()
-
+   # GetValue - Get the value of a specific setting.
    #---------------------------------------------------------------------------
-   #   // Get the value of the foo key.   log.Println("calling GetValue(foo)")
    #   callGetValue(settingsClient)
-   def GetValue(self) :
+   #
+   #  rpc GetValue(GetValueRequest) returns (Value);
+   #
+   #  message GetValueRequest {
+   #
+   #     // The key of the setting.
+   #     string key = 1;
+   #
+   #  message Value {
+   #
+   #     // The key of the setting.
+   #     string key = 1;
+   #
+   #     // The setting, in JSON format.
+   #     string jsonData = 2;
+   #
+   def GetValue(self, key) :
+      WarnWarn() ### NOT DONE #######################################################################
+      try:
+         p = settings_pb2.GetValueRequest(key=key)
+         print("GetValue: >", p, "<")
+         response = self.settingsClient.GetValue(p)
+         return json.loads(response.jsonData)
+      except grpc.RpcError as rpc_error_call:
+         details = rpc_error_call.details()
+         print("GetValue ERROR: " + details)
+         return 'error'
+
+   #---------------------------------------------------------------------------
+   # Merge - Set multiple settings values at once.
+   #---------------------------------------------------------------------------
+   #  rpc Merge(RawData) returns (MergeResponse);
+   #
+   #  message RawData {
+   #
+   #     // The settings, in JSON format.
+   #     string jsonData = 1;
+   #
+   #  message MergeResponse {}
+   #
+   def Merge(self, jsonData) :
       WarnWarn()
+      self.settingsClient.Merge(settings_pb2.RawData(jsonData=jsonData))
+      return
+
+
+#func callMerge(client settings.SettingsClient) {
+#	bulkSettings := `{"foo": "bar", "daemon":{"port":"422"}}`
+#	_, err := client.Merge(context.Background(),
+#		&settings.RawData{
+#			JsonData: bulkSettings,
+#		})
+#
+#	if err != nil {
+#		log.Fatalf("Error merging settings: %s", err)
+#	}
+#}
+
+
+   #---------------------------------------------------------------------------
+   # SetValue - Set the value of a specific setting.
+   #---------------------------------------------------------------------------
+   #  rpc SetValue(Value) returns (SetValueResponse);
+   #
+   #  message Value {
+   #
+   #     // The key of the setting.
+   #     string key = 1;
+   #
+   #     // The setting, in JSON format.
+   #     string jsonData = 2;
+   #
+   #  message SetValueResponse {}
+   def SetValue(self, key, jsonData) :
+      self.settingsClient.SetValue(settings_pb2.Value(key=key, jsonData=jsonData))
+      return
 
    #---------------------------------------------------------------------------
    #   // Let's search for a platform (also known as 'core') called 'samd'.   log.Println("calling PlatformSearch(samd)")
@@ -194,7 +268,7 @@ class ArduinoCliClient:
    #---------------------------------------------------------------------------
    # BoardAttach -
    #---------------------------------------------------------------------------
-   #   rpc BoardAttach(BoardAttachReq) returns (stream BoardAttachResp);
+   #  rpc BoardAttach(BoardAttachReq) returns (stream BoardAttachResp);
    #
    #  message BoardAttachReq {
    #
@@ -272,9 +346,14 @@ class ArduinoCliClient:
    #                                               // When set to `true` only the compilation database will be produced and no actual build will be performed.
    #   map<string, string> source_override = 22;   // This map (source file -> new content) let the builder use the provided content instead of reading the corresponding file on disk. This is useful for IDE that have unsaved changes in memory. The path must be relative to the sketch directory. Only files from the sketch are allowed.
    # }
-   def Compile(self, fqbn, sketch_path, warnings='all', verbose=3, clean=False) :
+   def Compile(self, fqbn, sketch_path, warnings='all', verbose=1, clean=False) :
       # note: sketch_path translates to SketchPath
       p = compile_pb2.CompileReq(instance=self.instance, fqbn=fqbn, sketchPath=sketch_path, warnings=warnings, verbose=verbose, clean=clean)
+      p.buildCachePath  = 'C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1\\ABuild' # 'core' is appended
+      p.buildPath       = 'C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1\\ABuild'
+      p.export_dir      = 'C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1\\ABuild\\export'
+      p.libraries.append('C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1\\Build\\RobotLib.a')
+#      p.quit = True
       print("CompileReq: >", p, "<")
       rstream = self.client.Compile(p)
 
@@ -481,61 +560,95 @@ if __name__ == '__main__':
 
    Stamp("Programstart")
 
-#   TestSketchPath = 'C:\\GitHub\\ArduinoProjects\\ArduinoCli-PythonClient\\hello'
-#   TestFqbn       = 'arduino:avr:nano:cpu=atmega328old'
-#   TestPort       = 'COM13'
+   if False:
+      TestSketchPath = 'C:\\GitHub\\ArduinoProjects\\ArduinoCli-PythonClient\\hello'
+      TestFqbn       = 'arduino:avr:nano:cpu=atmega328old'
+      TestPort       = 'COM13'
 
-   TestSketchPath = 'C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1'
-   TestFqbn       = 'STM32:stm32:GenF4:pnum=DIYMORE_F407VGT,upload_method=swdMethod,xserial=none,usb=none,xusb=FS,opt=osstd,rtlib=nano'
-   TestPort       = ''
+   if True:
+      TestSketchPath = 'C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1'
+      TestFqbn       = 'STM32:stm32:GenF4:pnum=DIYMORE_F407VGT,upload_method=swdMethod,xserial=none,usb=none,xusb=FS,opt=osstd,rtlib=nano'
+      TestPort       = ''
 
    # create instance & setup client(s)
    Acc = ArduinoCliClient()
    Stamp("Create ArduinoCliClient")
 
-#   print("calling Version")
-#   print(Acc.Version())    # get version of Arduino-CLI
+   if False:
+      print("calling Version")
+      print(Acc.Version())    # get version of Arduino-CLI
 
-#   print("calling LoadSketch")
-#   print(Acc.LoadSketch(TestSketchPath))
+   if False:
+      print("calling SetValue")
+      # create in root of settings dict:
+      # "foo": {
+      #     "data": "aap",
+      #     "downloads": "noot",
+      #     "user": "mies"
+      # }
+      JsonData = '{"data": "aap", "downloads": "noot", "user": "mies"}'
+      Acc.SetValue('foo', JsonData) # Set value
 
-#   print("calling BoardDetails")
-#   print(Acc.BoardsDetails(TestFqbn ))
+   if True:
+      print("calling SetValue")
+      # create '"boom": "roos"' at the root of the settings dict.
+      JsonData = '"roos"'  # single string in json format
+      Acc.SetValue('boom', JsonData) # Set value
 
-#   print("calling BoardAttach")
-#   print(Acc.BoardAttach(TestSketchPath, TestPort))
+   if False:
+      print("calling Merge")
+      JsonData = '{"boom": "vis", "daemon":{"vuur":"pim"}}' # first key/value pair does not seem to work...
+      Acc.Merge(JsonData) # Set multiple values
+
+   if True:
+      print("calling GetAll")
+      JsonData = Acc.GetAll() # All the settings
+      print(json.dumps(JsonData, indent=4, sort_keys=True))
+
+   # GetValue -----------------------------------------------------------------
+   if True:
+      # How to specify the key properly?
+      # single level: 'boom'   - gaat soms goed?!!
+      # multi level???  'library:enable_unsafe_install', 'library:{enable_unsafe_install}', 'library{enable_unsafe_install}', library[enable_unsafe_install]
+      print("calling GetValue")
+      print(Acc.GetValue("daemon"))
+
+   if False:
+      print("calling LoadSketch")
+      print(Acc.LoadSketch(TestSketchPath))
+
+   if False:
+      print("calling BoardDetails")
+      print(Acc.BoardsDetails(TestFqbn ))
+
+   if False:
+      print("calling BoardAttach")
+      print(Acc.BoardAttach(TestSketchPath, TestPort))
+
+   # Compile ------------------------------------------------------------------
+   if False:
+      # TODO: cwd op project directory zetten,anders wordt link_opt.h blijbaar niet meegelinkt...
+      # Testen met de cli (zonder daemon) geeft wel deze info; makkelijker maken om
+      # de commando's voor de cli te genereren uit dit programma (of documenteren..)
+      # c:\RobotLib\Tools\Arduino\arduino-cli compile -b STM32:stm32:GenF4:pnum=DIYMORE_F407VGT,upload_method=swdMethod,xserial=none,usb=none,xusb=FS,opt=osstd,rtlib=nano C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1
+      print("calling Compile")
+      r = Acc.Compile(sketch_path=TestSketchPath, fqbn=TestFqbn, clean=False)
+      Stamp("Compile")
+      print(r)
+      if r != 'succes' : sys.exit(1)
+
+   # Upload -------------------------------------------------------------------
+   if False:
+      print("calling Upload")
+      print(Acc.Upload(fqbn=TestFqbn, sketch_path=TestSketchPath, port=TestPort))
+      Stamp("Upload")
 
 
-   # TODO: cwd op project directory zetten,anders wordt link_opt.h blijbaar niet meegelinkt...
-   # Testen met de cli (zonder daemon) geeft wel deze info; makkelijker maken om
-   # de commando's voor de cli te genereren uit dit programma (of documenteren..)
-   # c:\RobotLib\Tools\Arduino\arduino-cli compile -b STM32:stm32:GenF4:pnum=DIYMORE_F407VGT,upload_method=swdMethod,xserial=none,usb=none,xusb=FS,opt=osstd,rtlib=nano C:\\RobotLib\\Boards\\ArduinoStm32\\Sample_project_1
-   print("calling Compile")
-   r = Acc.Compile(sketch_path=TestSketchPath, fqbn=TestFqbn, clean=False)
-   Stamp("Compile")
-   print(r)
-   if r != 'succes' : sys.exit(1)
-
-   print("calling Upload")
-   print(Acc.Upload(fqbn=TestFqbn, sketch_path=TestSketchPath, port=TestPort))
-   Stamp("Upload")
 
 
-   # todo   // Use SetValue to configure the arduino-cli directories.
-   # todo   log.Println("calling SetValue")
-   # todo   callSetValue(settingsClient)
-   # todo
-   # todo   // List all the settings.
-   # todo   log.Println("calling GetAll()")
-   # todo   callGetAll(settingsClient)
-   # todo
    # todo   // Merge applies multiple settings values at once.
    # todo   log.Println("calling Merge(`{\"foo\": \"bar\", \"daemon\":{\"port\":\"422\"}}`)")
    # todo   callMerge(settingsClient)
-   # todo
-   # todo   // Get the value of the foo key.
-   # todo   log.Println("calling GetValue(foo)")
-   # todo   callGetValue(settingsClient)
    # todo
    # todo   // Let's search for a platform (also known as 'core') called 'samd'.
    # todo   log.Println("calling PlatformSearch(samd)")
