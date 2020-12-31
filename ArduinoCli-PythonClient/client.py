@@ -36,7 +36,7 @@ def WarnWarn():
 #        as it gives a great overview of the parameters.
 #     -> board_pb2 prefix of messages, since it is defined in board.proto.
 #     -> self.client since board_pb2 is imported from commands.
-#  * BoardDetails is an example of a non-stream call.
+#  * BoardDetails is an example of a non-stream call.  And a good example of how to document, based on the .proto file.
 #  * Some (most?) rcp definition have a 'stream' return-type, e.g. rpc Init(InitReq) returns (stream InitResp) {}
 #    See 'def Compile' of how these can be implemented in Python.
 
@@ -230,6 +230,7 @@ class ArduinoCliClient:
    #     string jsonData = 2;
    #
    #  message SetValueResponse {}
+   #
    def SetValue(self, key, jsonData) :
       self.settingsClient.SetValue(settings_pb2.Value(key=key, jsonData=jsonData))
       return
