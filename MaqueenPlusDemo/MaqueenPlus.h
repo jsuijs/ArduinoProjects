@@ -81,8 +81,8 @@ public:
 private:
    HardwareTimer TimerEncL, TimerEncR;
 
-   int RawEncoderLeft, RawEncoderRight;
-   int EncoderLeft, EncoderRight;
+   int RawEncoderLeft, RawEncoderRight;   // for EncodersReadDelta
+   int EncoderLeft, EncoderRight;         // for EncodersRead
 };
 //-----------------------------------------------------------------------------
 
@@ -131,12 +131,12 @@ extern "C" void SystemClock_Config(void)
 
 //-----------------------------------------------------------------------------
 #ifdef MAQUEEN_USE_USART3
-   HardwareSerial Serial(USART3);   // Usart3 on default pins (PB11/PB10)
+   HardwareSerial Serial(USART3);   // Usart3 on default pins (PB11/PB10) - I2C pins
 
    // Override _write to send printf output to 'Serial' (the one we have chosen) over the default USART1
    extern "C" int _write(int __attribute__ ((unused)) file, char *ptr, int len) { return Serial.write(ptr, len); }
 #else
-   // Usart1 on remapped pins
+   // Usart1 on remapped pins - Maqueen servo pins S1 & S2
    HardwareSerial Serial(PB7, PB6);
 #endif
 
@@ -267,8 +267,9 @@ void TMaqueenPlus::EncodersReadDelta(int &Left, int &Right)
    }
 
 //-----------------------------------------------------------------------------
-// TMaqueenPlus::EncodersReadDelta - read encoder and put *DELTA* in vars.
+// TMaqueenPlus::EncodersRead - read encoder and put result in vars.
 //-----------------------------------------------------------------------------
+// Note: in the process, this emulates 32-bit counters.
 // About 0.15mm / tick
 //-----------------------------------------------------------------------------
 void TMaqueenPlus::EncodersRead(int &Left, int &Right)

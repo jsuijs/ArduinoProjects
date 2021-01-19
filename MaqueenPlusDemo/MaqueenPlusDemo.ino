@@ -1,6 +1,6 @@
 
 // Create the robot
-//#define MAQUEEN_USE_USART3
+//#define MAQUEEN_USE_USART3 // USART3 is on I2C pins, default USART1 on servo pins S1 & S2
 #include "MaqueenPlus.h"
 TMaqueenPlus Robot;
 
