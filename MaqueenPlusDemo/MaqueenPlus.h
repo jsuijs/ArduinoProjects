@@ -60,6 +60,7 @@ class TMaqueenPlus
 public:
 	TMaqueenPlus();
 
+   void EncodersReadRaw(int &Left, int &Right);
    void EncodersReadDelta(int &Left, int &Right);
    void EncodersRead(int &Left, int &Right);
    void EncodersReset() { EncoderLeft = 0; EncoderRight = 0; }
@@ -247,8 +248,37 @@ void TMaqueenPlus::Motors(int PwmL, int PwmR)
    }
 
 //-----------------------------------------------------------------------------
+// TMaqueenPlus::EncodersReadRaw - read encoder & store result in RawEncoder*.
+//-----------------------------------------------------------------------------
+// There are three EncoderRead functions:
+//    EncodersReadRaw()
+//    EncodersReadDelta()
+//    EncodersRead()
+// *** Do not mix *** - choose one and stick to it.
+//
+// Features:
+// * updates RawEncoder* class vars
+//
+// About 0.15mm / tick
+//-----------------------------------------------------------------------------
+void TMaqueenPlus::EncodersReadRaw(int &Left, int &Right)
+   {
+      Left  = -TimerEncL.getCount(); // flip sign here if required
+      Right = -TimerEncR.getCount(); // flip sign here if required
+   }
+
+//-----------------------------------------------------------------------------
 // TMaqueenPlus::EncodersReadDelta - read encoder and put *DELTA* in vars.
 //-----------------------------------------------------------------------------
+// There are three EncoderRead functions:
+//    EncodersReadRaw()
+//    EncodersReadDelta()
+//    EncodersRead()
+// *** Do not mix *** - choose one and stick to it.
+//
+// Features:
+// * returns encoder counters deta from previous call
+//
 // About 0.15mm / tick
 //-----------------------------------------------------------------------------
 void TMaqueenPlus::EncodersReadDelta(int &Left, int &Right)
@@ -257,9 +287,7 @@ void TMaqueenPlus::EncodersReadDelta(int &Left, int &Right)
       int PrevEncoderLeft  = RawEncoderLeft;
       int PrevEncoderRight = RawEncoderRight;
 
-      // read encoders
-      RawEncoderLeft  = -TimerEncL.getCount(); // flip sign here if required
-      RawEncoderRight = -TimerEncR.getCount(); // flip sign here if required
+      EncodersReadRaw(RawEncoderLeft, RawEncoderRight);   // Store encoder values in RawEncoder*
 
       // return difference (cast to short int required to properly handle wrap around of 16-bit counters)
       Left  = (short int)(RawEncoderLeft  - PrevEncoderLeft);
@@ -269,7 +297,17 @@ void TMaqueenPlus::EncodersReadDelta(int &Left, int &Right)
 //-----------------------------------------------------------------------------
 // TMaqueenPlus::EncodersRead - read encoder and put result in vars.
 //-----------------------------------------------------------------------------
-// Note: in the process, this emulates 32-bit counters.
+// There are three EncoderRead functions:
+//    EncodersReadRaw()
+//    EncodersReadDelta()
+//    EncodersRead()
+// *** Do not mix *** - choose one and stick to it.
+//
+// Features:
+// * returns incremental encoder counters
+// * emulates 32-bit counters.
+// * supports EncodersReset()
+//
 // About 0.15mm / tick
 //-----------------------------------------------------------------------------
 void TMaqueenPlus::EncodersRead(int &Left, int &Right)
