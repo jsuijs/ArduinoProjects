@@ -79,6 +79,8 @@ public:
    void RgbLeds(int ColorL, int ColorR);
    void RgbLeds(int Color);
 
+   int  LineThreshold[6];
+
 private:
    HardwareTimer TimerEncL, TimerEncR;
 
@@ -165,6 +167,8 @@ TMaqueenPlus::TMaqueenPlus() : TimerEncL(MAQUEENPLUS_TIMER_ENCL), TimerEncR(MAQU
       pinMode(MAQUEENPLUS_PIN_LED_R_B, OUTPUT);     digitalWrite(MAQUEENPLUS_PIN_LED_R_B, true);
 
       pinMode(MAQUEENPLUS_PIN_CALC_KEY, INPUT_PULLUP);
+
+      for (int i=0; i<6; i++) LineThreshold[i] = 500; // defaults
 
       //-----------------------------------------------------------------------
       // Init hardware quadrature encoders & corresponding IO
@@ -428,12 +432,12 @@ int TMaqueenPlus::LineSensorBits()
       Value[4] = analogRead(MAQUEENPLUS_PIN_SENSOR_R2);
       Value[5] = analogRead(MAQUEENPLUS_PIN_SENSOR_R3);
 
-      if (Value[0] < 500) Bits |= 0x01;
-      if (Value[1] < 500) Bits |= 0x02;
-      if (Value[2] < 500) Bits |= 0x04;
-      if (Value[3] < 500) Bits |= 0x08;
-      if (Value[4] < 500) Bits |= 0x10;
-      if (Value[5] < 500) Bits |= 0x20;
+      if (Value[0] < LineThreshold[0]) Bits |= 0x01;
+      if (Value[1] < LineThreshold[1]) Bits |= 0x02;
+      if (Value[2] < LineThreshold[2]) Bits |= 0x04;
+      if (Value[3] < LineThreshold[3]) Bits |= 0x08;
+      if (Value[4] < LineThreshold[4]) Bits |= 0x10;
+      if (Value[5] < LineThreshold[5]) Bits |= 0x20;
 
 //      printf("LS %3d %3d %3d %3d %3d %3d\n", Value[0], Value[1], Value[2], Value[3], Value[4], Value[5]);
 
