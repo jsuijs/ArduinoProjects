@@ -1,0 +1,18 @@
+[Project ID]
+Signature=UE Proj: v.1
+Unicode=2
+[Project Information]
+Use Relative Directory=1
+Relative to Project File=1
+Include Sub Directories=1
+Project TagfileU=
+Project WordfileU=
+Project TpFileU=
+FilterU=
+Create Tagfile=0
+[FilesU]
+0=MaqueenPlus.h
+1=I2cSlaveRegisters.h
+2=ArduinoSettings.bat
+3=..+AFw-MaqueenPlusDemo+AFw-MaqueenPlus.h
+4=MaqueenPlus+AF8-I2cSlave.ino
