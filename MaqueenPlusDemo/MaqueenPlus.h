@@ -67,7 +67,7 @@ public:
 
    int  LineSensorRead(int Nr);
    int  LineSensorBits();
-   void SetLineSensorLeds(int Bits);
+   void LineSensorLeds(int Bits);
 
    bool CalcKey() { return (digitalRead(MAQUEENPLUS_PIN_CALC_KEY) == false); }
 
@@ -445,10 +445,10 @@ int TMaqueenPlus::LineSensorBits()
    }
 
 //-----------------------------------------------------------------------------
-// TMaqueenPlus::SetLineSensorLeds - Works on LineSensorBits output
+// TMaqueenPlus::LineSensorLeds - Works on LineSensorBits output
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-void TMaqueenPlus::SetLineSensorLeds(int Bits)
+void TMaqueenPlus::LineSensorLeds(int Bits)
    {
       digitalWrite(MAQUEENPLUS_PIN_LED_L3, (Bits & 0x01) == 0);
       digitalWrite(MAQUEENPLUS_PIN_LED_L2, (Bits & 0x02) == 0);

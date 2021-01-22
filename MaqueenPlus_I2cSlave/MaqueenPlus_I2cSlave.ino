@@ -13,49 +13,49 @@ TMaqueenPlus Robot;
 
 //-----------------------------------------------------------------------------
 // I2c registers:
-#define R_ID            0X00  // fixed number IDENTIFICATION (read only)
-#define R_BUTTON        0X01  // status of calibration switch
-#define R_ENC_L_H       0X02  // Encoders
-#define R_ENC_L_L       0X03
-#define R_ENC_R_H       0X04
-#define R_ENC_R_L       0X05
+#define R_ID            0x00  // fixed number IDENTIFICATION (read only)
+#define R_BUTTON        0x01  // status of calibration switch
+#define R_ENC_L_H       0x02  // Encoders
+#define R_ENC_L_L       0x03
+#define R_ENC_R_H       0x04
+#define R_ENC_R_L       0x05
 
-#define R_PWM_L_H       0X06   // pwm values (output)
-#define R_PWM_L_L       0X07
-#define R_PWM_R_H       0X08
-#define R_PWM_R_L       0X09
+#define R_PWM_L_H       0x06   // pwm values (output)
+#define R_PWM_L_L       0x07
+#define R_PWM_R_H       0x08
+#define R_PWM_R_L       0x09
 
-#define R_RGB_LEDS      0X0A  // 3 bits in each nibble for L, R
-#define R_LINE_LEDS     0X0B  // lower 6 bits, one for each led near linesensor - 0x80 shows LINE_BITS
-#define R_LINE_BITS     0X0C  // lower 6 bits, one for each linesensor
+#define R_RGB_LEDS      0x0A  // 3 bits in each nibble for L, R
+#define R_LINE_LEDS     0x0B  // lower 6 bits, one for each led near linesensor - 0x80 shows LINE_BITS
+#define R_LINE_BITS     0x0C  // lower 6 bits, one for each linesensor
 
-#define R_SENSOR_L3_H   0X10  // analog value of linesensor
-#define R_SENSOR_L3_L   0X11
-#define R_SENSOR_L2_H   0X12
-#define R_SENSOR_L2_L   0X13
-#define R_SENSOR_L1_H   0X14
-#define R_SENSOR_L1_L   0X15
-#define R_SENSOR_R1_H   0X16
-#define R_SENSOR_R1_L   0X17
-#define R_SENSOR_R2_H   0X18
-#define R_SENSOR_R2_L   0X19
-#define R_SENSOR_R3_H   0X1A
-#define R_SENSOR_R3_L   0X1B
+#define R_SENSOR_L3_H   0x10  // analog value of linesensor
+#define R_SENSOR_L3_L   0x11
+#define R_SENSOR_L2_H   0x12
+#define R_SENSOR_L2_L   0x13
+#define R_SENSOR_L1_H   0x14
+#define R_SENSOR_L1_L   0x15
+#define R_SENSOR_R1_H   0x16
+#define R_SENSOR_R1_L   0x17
+#define R_SENSOR_R2_H   0x18
+#define R_SENSOR_R2_L   0x19
+#define R_SENSOR_R3_H   0x1A
+#define R_SENSOR_R3_L   0x1B
 
-#define R_SETPOINT_L3_H 0X20  // threshold for LINE_BITS, a value for each linesensor
-#define R_SETPOINT_L3_L 0X21
-#define R_SETPOINT_L2_H 0X22
-#define R_SETPOINT_L2_L 0X23
-#define R_SETPOINT_L1_H 0X24
-#define R_SETPOINT_L1_L 0X25
-#define R_SETPOINT_R1_H 0X26
-#define R_SETPOINT_R1_L 0X27
-#define R_SETPOINT_R2_H 0X28
-#define R_SETPOINT_R2_L 0X29
-#define R_SETPOINT_R3_H 0X2A
-#define R_SETPOINT_R3_L 0X2B
+#define R_SETPOINT_L3_H 0x20  // threshold for LINE_BITS, a value for each linesensor
+#define R_SETPOINT_L3_L 0x21
+#define R_SETPOINT_L2_H 0x22
+#define R_SETPOINT_L2_L 0x23
+#define R_SETPOINT_L1_H 0x24
+#define R_SETPOINT_L1_L 0x25
+#define R_SETPOINT_R1_H 0x26
+#define R_SETPOINT_R1_L 0x27
+#define R_SETPOINT_R2_H 0x28
+#define R_SETPOINT_R2_L 0x29
+#define R_SETPOINT_R3_H 0x2A
+#define R_SETPOINT_R3_L 0x2B
 
-#define REG_MAP_SIZE   (0X30)
+#define REG_MAP_SIZE   (0x30)
 
 // Create 2nd wire port & tell I2cSlaveRegisters.h to use this one
 #include <Wire.h>
@@ -143,10 +143,10 @@ void loop()
       int LineLeds = RegisterGetByte(R_LINE_LEDS);
       if (LineLeds < 0x80) {
          // if high bit of R_LINE_LEDS is low, lower 6 bits specify LED values
-         Robot.SetLineSensorLeds(LineLeds);
+         Robot.LineSensorLeds(LineLeds);
       } else {
          // If high bit of R_LINE_LEDS is set, linesensor bit-values are displayed.
-         Robot.SetLineSensorLeds(Robot.LineSensorBits());
+         Robot.LineSensorLeds(Robot.LineSensorBits());
       }
    }
 

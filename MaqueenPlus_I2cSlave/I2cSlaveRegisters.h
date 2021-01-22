@@ -93,7 +93,7 @@ int RegisterGetWord(int i)
    if (!ValidRegister(i, 2)) return -1;
 
    noInterrupts();
-   int Value = (((int) I2cRegister[i]) << 8) | (int) I2cRegister[i+1];
+   short int Value = (((int) I2cRegister[i]) << 8) | (int) I2cRegister[i+1];
    interrupts();
 
    return Value;
