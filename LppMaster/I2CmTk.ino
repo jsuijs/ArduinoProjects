@@ -8,9 +8,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //-----------------------------------------------------------------------------
-#include <Wire.h>
 
-int I2cDebug = 0;
 static void(* resetFunc) (void) = 0;//declare reset function at address 0
 
 /*=====================================================================
@@ -241,7 +239,7 @@ public:
 
   void Print()
   {
-    printf( "Cnt = %d  A=%u  B=%u  C=%u  Cmd=%s\r\n", ParamCount, Number[0], Number[1], Number[2], Cmd) ;
+    CSerial.printf( "Cnt = %d  A=%u  B=%u  C=%u  Cmd=%s\r\n", ParamCount, Number[0], Number[1], Number[2], Cmd) ;
   }
 
 
@@ -266,9 +264,8 @@ public:
     LastError = 2;  // unknown command
 
     if (MatchCommand("?",         0)) PrintTkMsg();
-    if (MatchCommand("debug",     1)) I2cDebug = Number[0];
+    if (MatchCommand("debug",     1)) Lpp.I2cDebug = Number[0];
     if (MatchCommand("scan",      0)) BusScan();
-    if (MatchCommand("ram",       0)) printf("Ram: %d bytes vrij\n", FreeRam());
     if (MatchCommand("fill",      3)) EepromFill(Number[0], Number[1], Number[2]);
 
     if (MatchCommand("rnb",       1)) I2cReader(Number[0], 0, 1,       0);
@@ -325,24 +322,24 @@ public:
           return Cmd[0];
         }
         else {
-          printf("Onbekend cmd '%s' (2)\n", Cmd);
+          CSerial.printf("Onbekend cmd '%s' (2)\n", Cmd);
           return 2;
         }
         break;
       }
     case 1 :
       {
-        printf("Error: # params - cmd '%s'\n", Cmd);
+        CSerial.printf("Error: # params - cmd '%s'\n", Cmd);
         return 2;
       }
     case 0 :
       {
-        printf("TkCmd '%s' gereed.\n", Cmd);
+        CSerial.printf("TkCmd '%s' gereed.\n", Cmd);
         return 1;
       }
     default :
       {
-        printf("Error 0924\n");
+        CSerial.printf("Error 0924\n");
         return 2;
       }
     }
@@ -371,16 +368,16 @@ char CGet()
 
   if (First) {
     First = false;
-    Serial.setTimeout(50);
+    CSerial.setTimeout(50);
   }
 
-  if( Serial.available() > 0)
+  if( CSerial.available() > 0)
   {
-    int r = Command.GetLine(Serial.read());
+    int r = Command.GetLine(CSerial.read());
     if (r == 0) return 0;  // still reading line
 
     if (r < 0) {
-      printf("Cmd parse err %d\n", r);
+      CSerial.printf("Cmd parse err %d\n", r);
       Command.Clear();
       return 0;
     }
@@ -401,30 +398,10 @@ char CGet()
 //-----------------------------------------------------------------------------
 void PrintTkMsg()
 {
-  Serial.print(F("\nI2CmTk - I2C Master Toolkit versie 0.81\n"));
-  Serial.print(F("Ontwikkeld voor de Workshop 'Arduino & I2C'.\n"));
-  Serial.print(F("(c) 2016-2017 Karel Dupain & Joep Suijs\n"));
-  printf("Gecompileerd: %s %s\n", __DATE__, __TIME__ );
-}
-
-//-----------------------------------------------------------------------------
-// my_putc - links stdout (printf) to serial
-//-----------------------------------------------------------------------------
-// put 'fdevopen( &my_putc, 0);' in setup();
-//-----------------------------------------------------------------------------
-int my_putc(char c, FILE *t) {
-  if (c == '\n') Serial.write('\r');
-  return Serial.write(c);
-}
-
-//-----------------------------------------------------------------------------
-// FreeRam - actueel vrij geheugen in bytes.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-int FreeRam () {
-  extern int __heap_start, *__brkval;
-  int v;
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval);
+  CSerial.print(F("\nI2CmTk - I2C Master Toolkit versie 0.81\n"));
+  CSerial.print(F("Ontwikkeld voor de Workshop 'Arduino & I2C'.\n"));
+  CSerial.print(F("(c) 2016-2017 Karel Dupain & Joep Suijs\n"));
+  CSerial.printf("Gecompileerd: %s %s\n", __DATE__, __TIME__ );
 }
 
 //-----------------------------------------------------------------------------
@@ -434,10 +411,10 @@ int FreeRam () {
 //-----------------------------------------------------------------------------
 bool AddressProbe(int I2cSlaveAddress)
 {
-  Wire.requestFrom(I2cSlaveAddress, 1);    // request 2 bytes from slave device #112
+  MyWire.requestFrom(I2cSlaveAddress, 1);    // request 2 bytes from slave device #112
 
-  if (Wire.available() != 0) {
-    Wire.read();
+  if (MyWire.available() != 0) {
+    MyWire.read();
     return true;  // slave present
   }
   return false;  // not present
@@ -452,120 +429,14 @@ void BusScan()
   for (int I2cSlaveAddress = 0; I2cSlaveAddress<127; I2cSlaveAddress++) {
 
     if (AddressProbe(I2cSlaveAddress)) {
-      printf("%2x", I2cSlaveAddress);
+      CSerial.printf("%2x", I2cSlaveAddress);
     }
-    printf(".");
-    if ((I2cSlaveAddress & 0x01F) == 0x1F) printf("\n");
+    CSerial.printf(".");
+    if ((I2cSlaveAddress & 0x01F) == 0x1F) CSerial.printf("\n");
   }
-  printf("\n");
+  CSerial.printf("\n");
 }
 
-//-----------------------------------------------------------------------------
-// I2cSendReceive - Send and/or Receive data to/from i2c slave.
-//-----------------------------------------------------------------------------
-// return: true on success
-//-----------------------------------------------------------------------------
-bool I2cSendReceive(byte I2cSlaveAddress, byte TxCount, byte RxCount, const byte *TxBuffer, byte *RxBuffer)
-{
-  byte r;
-
-  if (I2cDebug) {
-    printf("I2cSendReceive(%d %d %d)\n", I2cSlaveAddress, TxCount, RxCount);
-  }
-
-  if (TxCount > 0) {
-    if (I2cDebug > 1) {
-      printf("TxBuf:\n");
-      HexDump(TxBuffer, TxCount);
-    }
-
-    Wire.beginTransmission(I2cSlaveAddress);
-    for (int i=0; i<TxCount; i++) {
-      Wire.write(TxBuffer[i]); //
-    }
-    r = Wire.endTransmission();
-    if (r != 0) return false;  // error
-  }
-
-  if (RxCount > 0) {
-
-    for (int i=0; i<RxCount; i++) RxBuffer[i] = 0;
-
-    Wire.requestFrom(I2cSlaveAddress, RxCount);    // request byte(s) from slave device
-
-    if (Wire.available() != RxCount) return false;  // error
-
-    for (int i=0; i<RxCount; i++) {
-      RxBuffer[i] = Wire.read();
-    }
-    if (I2cDebug > 1) {
-      printf("RxBuf:\n");
-      HexDump(RxBuffer, RxCount);
-    }
-  }
-  return true;  // success
-}
-
-//-----------------------------------------------------------------------------
-// HexDump - Dump Data in hex format
-//-----------------------------------------------------------------------------
-// No offset, so address displayed at the start of each line starts at 0.
-//-----------------------------------------------------------------------------
-void HexDump(const void *Data, int Length)
-{
-  HexDump(Data, Length, 0);
-}
-
-/*=====================================================================
- HexDump :
- ---------------------------------------------------------------------*/
-// Parameters:
-//    Data   - data to be dumped
-//    Length - nr of bytes to be dumped
-//    Offset - offset of address (from 0), displayed at the start of each line.
-//-----------------------------------------------------------------------------
-void HexDump( const void *Data, unsigned int Length, unsigned int Offset)
-{
-  unsigned char *data    = (unsigned char *)Data    ;
-
-  unsigned int Track1 = 0 ;
-  unsigned int Track2 = 0 ;
-
-  for( unsigned int Index=0 ; Index < Length ; Index = Index+16 )
-  {
-    printf( "%04x: ", Offset + Index ) ;
-
-    for( unsigned int j=0 ; j < 16 ; j++ )
-    {
-      if( Track1 < Length ) printf( "%02x", data[ Index+j ] ) ;
-      else printf( "  " ) ;
-
-      printf( " " ) ;
-
-      Track1++ ;
-    }
-
-    printf( " "  ) ;
-
-    for( unsigned int j=0 ; j < 16 ; j++ )
-    {
-      if( Track2 < Length )
-      {
-        if( data[ Index+j ] < 32 ) printf( "." ) ;
-        else
-        {
-          if( data[ Index+j ] < 127 ) printf( "%c", data[ Index+j ] ) ;
-          else printf( "."                   ) ;
-        }
-      }
-      else printf( " " ) ;
-
-      Track2++ ;
-    }
-
-    printf( "\r\n" ) ;
-  }
-}
 
 //-----------------------------------------------------------------------------
 // _SetupRegisterAddress - support function
@@ -644,12 +515,12 @@ static void I2cReader(int Slave, int RegBytes, int DataBytes, int RegAddr)
     }
   }
 
-  printf("I2c read 0x%02x, ", Slave);
+  CSerial.printf("I2c read 0x%02x, ", Slave);
   if (RegBytes != 0) {
-    printf("Reg: %d (0x%02x), Data: %u (0x%x)\n", RegAddr, RegAddr, Data, Data);
+    CSerial.printf("Reg: %d (0x%02x), Data: %u (0x%x)\n", RegAddr, RegAddr, Data, Data);
   }
   else {
-    printf("Data: %u\n", Data);
+    CSerial.printf("Data: %u\n", Data);
   }
 }
 
@@ -695,12 +566,12 @@ static void I2cWriter( int Slave, int RegBytes, int DataBytes, int RegAddr, int 
     return;
   }
 
-  printf("Slave: 0x%02x, ", Slave);
+  CSerial.printf("Slave: 0x%02x, ", Slave);
   if (RegBytes != 0) {
-    printf("register %d (0x%02x) set to %d (0x%02x)\n", RegAddr, RegAddr, Data, Data);
+    CSerial.printf("register %d (0x%02x) set to %d (0x%02x)\n", RegAddr, RegAddr, Data, Data);
   }
   else {
-    printf("Data: %d (0x%02x)\n", Data, Data);
+    CSerial.printf("Data: %d (0x%02x)\n", Data, Data);
   }
 }
 
@@ -716,14 +587,14 @@ static void I2cReader2(int Slave, int RegBytes, int DataBytes, int RegAddr)
   byte RxBuffer[34];
 
   if (DataBytes > 32) {
-    printf("#bytes limited to 32!\n");
+    CSerial.printf("#bytes limited to 32!\n");
     DataBytes = 32;
   }
 
   _SetupRegisterAddress(TxBuffer, RegBytes, RegAddr);
 
   if (!I2cSendReceive(Slave, RegBytes, DataBytes, TxBuffer, RxBuffer)) {
-    printf("I2cRead() - comms err\n");
+    CSerial.printf("I2cRead() - comms err\n");
     return;
   }
   HexDump(RxBuffer, DataBytes);
@@ -750,17 +621,17 @@ void EepromFill(int Slave, int Size, int Value)
     TxBuffer[1] = i & 0xFF;
     r = I2cSendReceive(Slave, 18, 0, TxBuffer, NULL);
     if (!r) {
-      printf("\nEeFill err %d.\n", i);
+      CSerial.printf("\nEeFill err %d.\n", i);
       return;
     }
 
-    if ((i & 0x3F) == 0)  printf(".");  // print dot in one of 64 runs.
+    if ((i & 0x3F) == 0)  CSerial.printf(".");  // print dot in one of 64 runs.
 
     while (AddressProbe(Slave) == false) {
       // wait for eeprom to finish write
     }
   }
-  printf("\nEeFill done\n");
+  CSerial.printf("\nEeFill done\n");
 }
 
 //-----------------------------------------------------------------------------
@@ -768,8 +639,5 @@ void EepromFill(int Slave, int Size, int Value)
 //-----------------------------------------------------------------------------
 void I2cError(int Slave, int ErrorNr)
 {
-  printf("I2c error bij communicatie met slave 0x%02x (%d).\n", Slave, ErrorNr);
+  CSerial.printf("I2c error bij communicatie met slave 0x%02x (%d).\n", Slave, ErrorNr);
 }
-
-
-

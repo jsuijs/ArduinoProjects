@@ -1,16 +1,24 @@
+HardwareSerial Serial2 (PA3, PA2);
+#define CSerial Serial2
+
 #include <Wire.h>
+TwoWire Wire99(PB11, PB10);
+#define MyWire Wire99
+
 #include "LppMaster.h"
 TLpp Lpp;
 
-int PeriodicInterval = 500;     // 0 = alleen toolkit, anders periodiek uitlezen printen.
+int PeriodicInterval = 0;     // 0 = alleen toolkit, anders periodiek uitlezen printen.
+
+
+
 
 void setup() {
-   Serial.begin(115200);      // start serial
-   fdevopen( &my_putc, 0);    // Koppel printf uitvoer (stdout) via my_putc() aan de serial port.
+   CSerial.begin(115200);      // start serial
 
    PrintTkMsg();              // print helptekst van I2C Master Toolkit
 
-   Wire.begin();              // start I2C
+   MyWire.begin();              // start I2C
 
    delay(500);  // allow Lpp to start up.
 
@@ -41,14 +49,14 @@ void loop()
 
       if (Lpp.IsRunning()) {
          Lpp.ReadSensors();
-         printf("Sensor 0, graden: %d, afstand: %d\n", Lpp.Sensor[0].Degrees32/32, Lpp.Sensor[0].Distance);
+         CSerial.printf("Sensor 0, graden: %d, afstand: %d\n", Lpp.Sensor[0].Degrees32/32, Lpp.Sensor[0].Distance);
 
          Lpp.ReadArray();
-         printf("Array: ");
+         CSerial.printf("Array: ");
          for (int i=0; i<9; i++) {
             printf("%5d ", Lpp.Array[i].Distance);
          }
-         printf("\n");
+         CSerial.printf("\n");
       }
 
       delay(PeriodicInterval);
