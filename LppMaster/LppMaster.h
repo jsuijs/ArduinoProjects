@@ -200,7 +200,7 @@ class TLpp {
 
       void ReadPrintSensorCfg(int Nr);
 
-      int I2cDebug;
+      int I2cDebug; // for non-robotlib Arduino only
   private:
       int EnableMode;   // 0 = begin not called (or no succes), 1 = inactive, 2 = active
       bool _SA_Setup(char StartIx, char Mode, int StartAngle, int StepAngle, int StepCount);
@@ -222,9 +222,10 @@ TLpp::TLpp()
    {
 
 #ifdef ROBOTLIB_BASE_H
-#ifndef RLM_AUTO_CLI_ADD_DISABLE
+  #ifndef RLM_AUTO_CLI_ADD_DISABLE
       CliAddCommands(CliRecords, "Lpp", "lpp");
   #endif
+
       Registry.Add("Lpp.Array.Distance",   LppReadArrayDistance,   0);
       Registry.Add("Lpp.Sensor.Distance",  LppReadSensorDistance,  0);
       Registry.Add("Lpp.Sensor.HrDegrees", LppReadSensorDegrees32, 0);
@@ -242,6 +243,7 @@ TLpp::TLpp()
 //-----------------------------------------------------------------------------
 bool TLpp::begin()
    {  bool r;
+
       if (EnableMode != 0) return true;
       // some tries to communicate, allows Lpp bootloader timeout.
       for (int i=0; i< 20; i++) {
@@ -252,15 +254,17 @@ bool TLpp::begin()
                printf("Lpp.begin() failed (interface version error - %d, expected %d\n", (int) Status.SwRevision, INTERFACE_VERSION);
                delay(250);
                continue;
-      }
+            }
             break;
-      }
+         }
          delay(250);
       }
+
       if (r == false) {
          printf("Lpp.begin() failed (i2c error)\n");
          return false;
       }
+
       EnableMode = 1;
       return true;
    }
@@ -277,6 +281,7 @@ bool TLpp::Start()
          return false;  // begin not called, of failure
       }
       EnableMode = 2;   // active
+
       return I2cWrite_Byte_Byte(LPP_I2C_ADDRESS, R_CMD, 1);
    }
 
@@ -289,6 +294,7 @@ bool TLpp::Stop()
    {
       if (EnableMode == 0) return false;  // begin not called, of failure
       EnableMode = 1;   // inactive
+
       return I2cWrite_Byte_Byte(LPP_I2C_ADDRESS, R_CMD, 2);
    }
 
@@ -301,9 +307,11 @@ bool TLpp::IsRunning()
    {
       // check if we have comms & master tried to start the lidar
       if (EnableMode != 2) return false;
+
       // check if lidar is rotating
       ReadStatus();
       if (Lpp.Status.RotationTime == 0) return false;
+
       return true;
    }
 
@@ -314,6 +322,7 @@ bool TLpp::IsRunning()
 void TLpp::Takt()
    {
       if (EnableMode != 2) return;
+
       ReadArray();
       ReadSensors();
    }
@@ -337,6 +346,7 @@ bool TLpp::SensorSetup(int Nr, int StartAngle, int StepAngle)
    {
       return _SA_Setup(R_V0_MODE + Nr * 8, 3, StartAngle, StepAngle, 0);
    }
+
 //-----------------------------------------------------------------------------
 // TLpp::SensorSetupCan - Setup sensor 0...7 for CAN mode
 //-----------------------------------------------------------------------------
@@ -355,12 +365,15 @@ bool TLpp::ReadStatus()
 
       TxBuffer[0] = R_ID;
       bool r = I2cSendReceive(LPP_I2C_ADDRESS, 1, sizeof(Status), (lpp_tx_buffer *)TxBuffer, (lpp_rx_buffer *)&Status);
+
       // swap bytes of short.
       unsigned int t;
       t = Status.SampleRate;
       Status.SampleRate  = ((t & 0xFF) << 8) |  ((t >> 8) & 0xFF);
+
       t = Status.OffsetAngle;
       Status.OffsetAngle = ((t & 0xFF) << 8) |  ((t >> 8) & 0xFF);
+
       return r;
    }
 
@@ -387,6 +400,7 @@ bool TLpp::ReadSensors(int Count)
       if (SensorCount > 8) SensorCount = 8;
       return _ReadShorts(R_V0_DISTANCE_H, SensorCount * 2, (lpp_int *) Sensor);
    }
+
 //-----------------------------------------------------------------------------
 // TLpp::PrintStatus -
 //-----------------------------------------------------------------------------
@@ -406,6 +420,7 @@ void TLpp::PrintStatus()
 void TLpp::PrintArray()
    {
       if (EnableMode != 2) printf("Lpp.PrintArray() warning: EnableMode != 2\n");
+
       for (int i=0; i<ArrayCount; i++) {
          printf("%4d ", Array[i].Distance);
       }
@@ -419,13 +434,13 @@ void TLpp::PrintArray()
 void TLpp::PrintSensors()
    {
       if (EnableMode != 2) printf("Lpp.PrintSensors() warning: EnableMode != 2\n");
+
       for (int i=0; i<SensorCount; i++) {
          printf("%d Distance: %d, Degrees: %d (%d)\n", i, Sensor[i].Distance, NormDegrees(Sensor[i].Degrees32 / 32), Sensor[i].Degrees32);
       }
    }
 
 //-----------------------------------------------------------------------------
-
 // TLpp::ReadPrintSensorCfg -
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -453,7 +468,6 @@ void TLpp::ReadPrintSensorCfg(int Nr)
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
-
 // TLpp::_SA_Setup - private support routine for Sensor and Array setup
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -467,8 +481,11 @@ bool TLpp::_SA_Setup(char StartIx, char Mode, int StartAngle, int StepAngle, int
       TxBuffer[4] = StartAngle & 0xFF;
       TxBuffer[5] = StepAngle >> 8;
       TxBuffer[6] = StepAngle & 0xFF;
+
       bool ret = I2cSendReceive(LPP_I2C_ADDRESS, 7, 0, (lpp_tx_buffer *)TxBuffer, NULL);
+
       delay(5);
+
       return ret;
    }
 
@@ -478,6 +495,7 @@ bool TLpp::_SA_Setup(char StartIx, char Mode, int StartAngle, int StepAngle, int
 //-----------------------------------------------------------------------------
 bool TLpp::_ReadShorts(char StartIx, char NrOfShorts, lpp_int *Data)
    {  char TxBuffer[1];
+
 #ifdef ROBOTLIB_BASE_H
       // Data is array of ints, use separate buffer for temporary storage
       char RxBuffer[NrOfShorts * 2];
@@ -497,7 +515,7 @@ bool TLpp::_ReadShorts(char StartIx, char NrOfShorts, lpp_int *Data)
 
 //  HexDump((const void *)Data, 32);
       return r;
-}
+   }
 
 //-----------------------------------------------------------------------------
 // I2cWrite_Byte_Byte - Send a Byte address, then write a Byte of data.
