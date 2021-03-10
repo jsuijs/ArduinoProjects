@@ -36,7 +36,7 @@ void setup() {
 
       Lpp.Start();
    } else {
-      printf("LPP I2C error.\n");
+      CSerial.printf("LPP I2C error.\n");
    }
 }
 
@@ -54,7 +54,7 @@ void loop()
          Lpp.ReadArray();
          CSerial.printf("Array: ");
          for (int i=0; i<9; i++) {
-            printf("%5d ", Lpp.Array[i].Distance);
+            CSerial.printf("%5d ", Lpp.Array[i].Distance);
          }
          CSerial.printf("\n");
       }

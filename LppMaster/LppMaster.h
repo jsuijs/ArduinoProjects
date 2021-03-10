@@ -251,7 +251,7 @@ bool TLpp::begin()
          if (r == true) {
             // check here for version, sometimes we get the wrong one on startup
             if (Status.SwRevision != INTERFACE_VERSION) {
-               printf("Lpp.begin() failed (interface version error - %d, expected %d\n", (int) Status.SwRevision, INTERFACE_VERSION);
+               CSerial.printf("Lpp.begin() failed (interface version error - %d, expected %d\n", (int) Status.SwRevision, INTERFACE_VERSION);
                delay(250);
                continue;
             }
@@ -261,7 +261,7 @@ bool TLpp::begin()
       }
 
       if (r == false) {
-         printf("Lpp.begin() failed (i2c error)\n");
+         CSerial.printf("Lpp.begin() failed (i2c error)\n");
          return false;
       }
 
@@ -277,7 +277,7 @@ bool TLpp::begin()
 bool TLpp::Start()
    {
       if (EnableMode == 0) {
-         printf("Lpp.Start() error: EnableMode 0\n");
+         CSerial.printf("Lpp.Start() error: EnableMode 0\n");
          return false;  // begin not called, of failure
       }
       EnableMode = 2;   // active
@@ -407,9 +407,9 @@ bool TLpp::ReadSensors(int Count)
 //-----------------------------------------------------------------------------
 void TLpp::PrintStatus()
    {
-      printf("LidarID: %d, Sw: %d, RotCount: %d, RotTime: %d, SampleRate: %d\n",
+      CSerial.printf("LidarID: %d, Sw: %d, RotCount: %d, RotTime: %d, SampleRate: %d\n",
             Status.ID, Status.SwRevision, Status.RotationCount, Status.RotationTime, Status.SampleRate);
-      printf("Cfg RotSpeed: %d, OffsetAngle: %d, Reverse: %d\n",
+      CSerial.printf("Cfg RotSpeed: %d, OffsetAngle: %d, Reverse: %d\n",
             Status.RotSpeed, Status.OffsetAngle, Status.Reverse);
    }
 
@@ -419,12 +419,12 @@ void TLpp::PrintStatus()
 //-----------------------------------------------------------------------------
 void TLpp::PrintArray()
    {
-      if (EnableMode != 2) printf("Lpp.PrintArray() warning: EnableMode != 2\n");
+      if (EnableMode != 2) CSerial.printf("Lpp.PrintArray() warning: EnableMode != 2\n");
 
       for (int i=0; i<ArrayCount; i++) {
-         printf("%4d ", Array[i].Distance);
+         CSerial.printf("%4d ", Array[i].Distance);
       }
-      printf("\n");
+      CSerial.printf("\n");
    }
 
 //-----------------------------------------------------------------------------
@@ -433,10 +433,10 @@ void TLpp::PrintArray()
 //-----------------------------------------------------------------------------
 void TLpp::PrintSensors()
    {
-      if (EnableMode != 2) printf("Lpp.PrintSensors() warning: EnableMode != 2\n");
+      if (EnableMode != 2) CSerial.printf("Lpp.PrintSensors() warning: EnableMode != 2\n");
 
       for (int i=0; i<SensorCount; i++) {
-         printf("%d Distance: %d, Degrees: %d (%d)\n", i, Sensor[i].Distance, NormDegrees(Sensor[i].Degrees32 / 32), Sensor[i].Degrees32);
+         CSerial.printf("%d Distance: %d, Degrees: %d (%d)\n", i, Sensor[i].Distance, NormDegrees(Sensor[i].Degrees32 / 32), Sensor[i].Degrees32);
       }
    }
 
@@ -449,7 +449,7 @@ void TLpp::ReadPrintSensorCfg(int Nr)
       char RxBuffer[6];
 
       if ((Nr < -1) || (Nr > 7)) {
-         printf("Error: sensor # out of range (%d), 0..7 for sensors, -1 for array.\n", Nr);
+         CSerial.printf("Error: sensor # out of range (%d), 0..7 for sensors, -1 for array.\n", Nr);
          return;
       }
 
@@ -457,7 +457,7 @@ void TLpp::ReadPrintSensorCfg(int Nr)
       I2cSendReceive(LPP_I2C_ADDRESS, 1, 6, (lpp_tx_buffer *)TxBuffer, (lpp_rx_buffer *)RxBuffer);
 
       short TmpStart = (((int)RxBuffer[2]) << 8) + RxBuffer[3];
-      printf("Sensor %d, Mode: %d, Count: %d, Start: %d, Step: %d\n",
+      CSerial.printf("Sensor %d, Mode: %d, Count: %d, Start: %d, Step: %d\n",
          Nr, RxBuffer[0], RxBuffer[1], TmpStart, (((int)RxBuffer[4]) << 8) + RxBuffer[5]);
    }
 
