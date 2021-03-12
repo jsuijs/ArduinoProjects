@@ -176,7 +176,7 @@ class TLpp {
       bool begin();
       bool Start();
       bool Stop();
-      bool Demo()                         { return I2cWrite_Byte_Byte(LPP_I2C_ADDRESS, R_CMD,               2           ); };
+      bool Demo()                         { return I2cWrite_Byte_Byte(LPP_I2C_ADDRESS, R_CMD,               3           ); };
       bool SetReverse(char TrueFalse)     { return I2cWrite_Byte_Byte(LPP_I2C_ADDRESS, R_REVERSE_ROTATION,  TrueFalse   ); };
       bool SetOffsetDegrees(int Degrees)  { return I2cWrite_Byte_Word(LPP_I2C_ADDRESS, R_OFFSET_DEGREES_H,  Degrees     ); };
       bool SetOffsetX(int Mm)             { return I2cWrite_Byte_Byte(LPP_I2C_ADDRESS, R_OFFSET_X,          Mm / 2      ); };
