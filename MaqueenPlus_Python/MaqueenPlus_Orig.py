@@ -129,6 +129,20 @@ class MaqueenPlus :
            buf[1] = speed
            i2c.write(self.I2caddr, buf)
 
+   def servo(self, index, angle):
+       buf = bytearray(2)
+       buf[1]=angle
+
+       if(index == 1):
+           buf[0]=0x14
+           i2c.write(I2caddr, buf)
+       if(index == 2):
+           buf[0]=0x15
+           i2c.write(I2caddr, buf)
+       if(index == 3):
+           buf[0]=0x16
+           i2c.write(I2caddr, buf)
+
 if __name__ == "__main__":
    import music
    music.play(music.PYTHON[:4])
