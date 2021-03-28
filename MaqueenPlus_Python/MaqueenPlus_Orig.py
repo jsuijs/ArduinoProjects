@@ -135,13 +135,13 @@ class MaqueenPlus :
 
        if(index == 1):
            buf[0]=0x14
-           i2c.write(I2caddr, buf)
+           i2c.write(self.I2caddr, buf)
        if(index == 2):
            buf[0]=0x15
-           i2c.write(I2caddr, buf)
+           i2c.write(self.I2caddr, buf)
        if(index == 3):
            buf[0]=0x16
-           i2c.write(I2caddr, buf)
+           i2c.write(self.I2caddr, buf)
 
 if __name__ == "__main__":
    import music
