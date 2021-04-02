@@ -23,16 +23,23 @@
 #define ENCODER_R_PIN_B       PA1 //19 // interrupt 4
 //#define ENCODER_R_INTERRUPT    4 // pin 19
 
-// TB6612 pins:
-const int  A4950_PWML1 = PA6;
-const int  A4950_PWML2 = PA7;
-const int  A4950_PWMR1 = PB0;
-const int  A4950_PWMR2 = PB1;
+//-----------------------------------------------------------------------------
+// Motor configuration
+//#define USE_A4950
+//const int  A4950_PWML1 = PA6;
+//const int  A4950_PWML2 = PA7;
+//const int  A4950_PWMR1 = PB0;
+//const int  A4950_PWMR2 = PB1;
 
-// motor mapping
-#define Motors(PowerL, PowerR)   Motors_A4950(PowerL, PowerR);
-#define MotorsSetup()            MotorsSetup_A4950();
+#define USE_TB6612
+const int TB6612_PWML      = PA8;   // Pin 27
+const int TB6612_PWMR      = PA11;  // pin 24
+const int TB6612_DIRL_A1   = PB15;  // pin 28
+const int TB6612_DIRL_A2   = PA10;  // pin 25  jumper pin 23 PA12
+const int TB6612_DIRR_B1   = PB14;  // pin 29
+const int TB6612_DIRR_B2   = PA9;   // pin 26  jumper pin 31 PB12
 
+//-----------------------------------------------------------------------------
 // Hier de algemene definities
 #define MAIN_TAKT_RATE     (1000 / MAIN_TAKT_INTERVAL)   // Hz
 #define WIEL_BASIS         ((ODO_TICK_TO_METRIC * 917L) / ODO_HEADING)

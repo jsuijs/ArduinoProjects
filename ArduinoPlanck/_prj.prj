@@ -43,3 +43,4 @@ Relative to Project File=1
 10=ProgrammaTakt.cpp
 11=RcDispatch.cpp
 12=MotorController.cpp
+13=Motors+AF8-TB6612.cpp

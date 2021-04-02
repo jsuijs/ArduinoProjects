@@ -59,6 +59,9 @@ void IsrEncoderL();
 void IsrEncoderR();
 extern volatile int EncoderLTeller, EncoderRTeller;  // aantal flanken
 
+// Motors.cpp
+void SetupMotors();
+void Motors(int PwmL, int PwmR);
 
 extern TPosition Position;
 

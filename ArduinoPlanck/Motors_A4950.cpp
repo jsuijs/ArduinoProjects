@@ -3,12 +3,13 @@
 //                    A4950 chip direct aangesloten
 //-----------------------------------------------------------------------------
 #include "MyRobot.h"
+#ifdef USE_A4950
 
 //-----------------------------------------------------------------------------
-// SetupMotors_HL - Stel IO in voor aansturing motoren (harde aansturing)
+// SetupMotors - Stel IO in voor aansturing motoren (harde aansturing)
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-void MotorsSetup_A4950()
+void MotorsSetup()
 {
   // 4x PWM
   pinMode(A4950_PWML1, OUTPUT);
@@ -21,10 +22,10 @@ void MotorsSetup_A4950()
 }
 
 //------------------------------------------------------------------------------
-// Motors_A4950 - harde aansturing
+// Motors - harde aansturing
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void Motors_A4950(int PwmL, int PwmR)
+void Motors(int PwmL, int PwmR)
 {
   //  CSerial.printf("Motors %d %d\n", PwmL, PwmR);
   //--------
@@ -59,5 +60,4 @@ void Motors_A4950(int PwmL, int PwmR)
    }
 }
 
-
-
+#endif

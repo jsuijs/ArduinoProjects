@@ -1,11 +1,6 @@
 //-----------------------------------------------------------------------------
 // Drive.cpp
 //-----------------------------------------------------------------------------
-// Let op: deze file heeft als extensie .h, maar bevat ook code en is eigenlijk
-//         een combinatie van een .h en een .cpp file. Dit is (lijkt) de
-//         enige manier die voldoende controle geeft om een class in een Arduino
-//         project op te nemen. Met include bepaal je zelf waar de class wordt
-//         ingevoegd.
 //
 // Per 'bewegingstype' heeft deze class 2 methodes (functies). Neem bijvoorbeeld
 // de beweging 'SpeedLR' (M_SPEED_LR), waarme je de gewenste snelheid van de
@@ -23,7 +18,7 @@
 //
 //    void SpeedLRTakt(bool NewMovement, int SpeedL, int SpeedR, int MaxSlopeP);
 //
-// Dit is een private methode, die je dus niet zelf hoeft aan te roepen. Dat
+// Dit is een private methode, die je dus niet zelf aanroept. Dat
 // doet de Takt() methode. Maar... hier gebeurt het echte werk, op basis van
 // de parameters die je via SpeedLR() hebt ingesteld.
 //
