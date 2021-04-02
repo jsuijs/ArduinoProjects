@@ -5,6 +5,8 @@
 #ifndef ROBOTSETTINGS_H
 #define ROBOTSETTINGS_H
 
+#define CSerial Serial2
+
 // IO mapping
 //#define KEYBOARD_PIN    A0
 //#define BATTERIJ_PIN    A7

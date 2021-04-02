@@ -32,7 +32,10 @@ unsigned long pingTimer;     // Holds the next ping time.
 int UsDistance;
 
 
-HardwareSerial Serial(USART1);
+//HardwareSerial Serial(USART1);
+
+HardwareSerial Serial2 (PA3, PA2);
+
 
 //---------------------------------------------------------------------------------------
 // RC5 stuff start
@@ -63,28 +66,32 @@ void Rc5Isr()
 // the setup routine runs once when you press reset:
 void setup() {
    // start serial
-   Serial.begin(115200);
+   CSerial.begin(115200);
 //   Serial.println("Starten....\n");
-   printf("Starten 2\n");
-   MotorsSetup();
+   CSerial.printf("Starten 3\n");
 
-   EncoderSetup();
+   Position.init();  // delayed constructor
+   Driver.init();    // delayed constructor
+
+//   MotorsSetup();
+
+//   EncoderSetup();
 
    // Link PinChange interrupt to RC5 reader.
    //attachInterrupt(RC5_INTERRUPT, Rc5Isr, CHANGE);
 
    pingTimer = millis(); // Start now.
 
-   printf("Opstarten gereed.\n");
+   CSerial.printf("Opstarten gereed.\n");
+
+   for (;;) {}
 }
 
 void loop() {
    static int NextMainTakt;
    static int NextSecTakt;
    static int PrevMs;
-
-//   RcDispatch();
-
+//   RcDispatch(Rc5Data);
    // eens per miliseconde
    int ms = millis();
    if (ms != PrevMs) {  // miliseconde takt
@@ -94,47 +101,40 @@ void loop() {
       BlinkTakt();
       Lijn = 7 - (digitalRead(5) * 1 + digitalRead(6) * 2 + digitalRead(7) * 4);
    }
-
    // Main takt interval
    ms = millis();
    if ((ms - NextMainTakt) > 0) {
       NextMainTakt = ms + MAIN_TAKT_INTERVAL;  // zet tijd voor volgende interval
-
       // hier de periodieke acties voor deze interval
       Position.Takt(); // Lees & verwerk encoder data
       ProgrammaTakt(); // Voer (stapje van) geselecteerde programma uit
       Driver.Takt();   // stuur motoren aan
    }
-
    if (millis() >= pingTimer) {   // pingSpeed milliseconds since last ping, do another ping.
       pingTimer += 50;           // Set the next ping time.
 //      UsDistance = 10 * sonar.ping_cm(); // Ping returned, uS result in ping_result, convert to cm with US_ROUNDTRIP_CM.
-
 //      sonar.ping_timer(echoCheck); // Send out the ping, calls "echoCheck" function every 24uS where you can check the ping status.
    }
-
    // Seconde interval
    ms = millis();
    if ((ms - NextSecTakt) > 0) {
       NextSecTakt = ms + 1000;  // zet tijd voor volgende interval
-
       // hier de periodieke acties voor deze interval
 
       if (SecondLoggingOn) {
          // Optional logging, toggle with LIST button.
          //
-         // printf("Encoder L/R TPrev %d/%d TAct: %d/%d, Count: %d/%d\n",
+         // CSerial.printf("Encoder L/R TPrev %d/%d TAct: %d/%d, Count: %d/%d\n",
          //       EncoderLPeriode, EncoderRPeriode, EncoderL_LopendePeriode, EncoderR_LopendePeriode, EncoderLTeller, EncoderRTeller);
          EncoderPrint();
          Position.Print();
-         printf("encoder pins %d %d %d %d\n", digitalRead(ENCODER_L_PIN_A), digitalRead(ENCODER_L_PIN_B), digitalRead(ENCODER_R_PIN_A), digitalRead(ENCODER_R_PIN_B));
+         CSerial.printf("encoder pins %d %d %d %d\n", digitalRead(ENCODER_L_PIN_A), digitalRead(ENCODER_L_PIN_B), digitalRead(ENCODER_R_PIN_A), digitalRead(ENCODER_R_PIN_B));
          //int Batterij = analogRead(BATTERIJ_PIN);
          //int Spanning = (int) (145L * Batterij / 960);  // 14.8 volt geeft waarde 964
-         //printf("Batterij: %d (V * 10) (%d)\n", Spanning, Batterij);
-
-//         printf("Sharp %d %d %d %d\n", SharpLinks, SharpRechts, (int)analogRead(SHARP_LINKS_PIN), (int)analogRead(SHARP_RECHTS_PIN) );
-//         printf("Lijn: %d (%d %d %d)\n", Lijn, digitalRead(5), digitalRead(6), digitalRead(7));
-//         printf("Sonar: %d\n", UsDistance);
+         //CSerial.printf("Batterij: %d (V * 10) (%d)\n", Spanning, Batterij);
+//         CSerial.printf("Sharp %d %d %d %d\n", SharpLinks, SharpRechts, (int)analogRead(SHARP_LINKS_PIN), (int)analogRead(SHARP_RECHTS_PIN) );
+//         CSerial.printf("Lijn: %d (%d %d %d)\n", Lijn, digitalRead(5), digitalRead(6), digitalRead(7));
+//         CSerial.printf("Sonar: %d\n", UsDistance);
       }
    }
 }

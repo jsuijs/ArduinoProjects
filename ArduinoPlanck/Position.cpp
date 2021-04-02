@@ -12,7 +12,7 @@
 //-----------------------------------------------------------------------------
 TPosition::TPosition()
    {
-      Reset();
+      // call init when CSerial is up.
    }
 
 //-----------------------------------------------------------------------------
@@ -34,7 +34,7 @@ void TPosition::OdoGet(int &OdoL_out, int &OdoR_out, int &OdoT_out)
 //------------------------------------------------------------------------
 void TPosition::Reset()
    {
-      printf("ResetRobotPosition\n");
+      CSerial.printf("ResetRobotPosition\n");
       VarRobotXPos = 0;
       VarRobotYPos = 0;
       VarRobotHoek = 0;
@@ -63,7 +63,7 @@ long TPosition::HoekHires()
 void TPosition::Print()
    {
       Update();
-      printf("RobotPosition X: %d, Y: %d, Hoek: %d, ActSpeed %d / %d\n", XPos, YPos, Hoek,ActSpeedL, ActSpeedR);
+      CSerial.printf("RobotPosition X: %d, Y: %d, Hoek: %d, ActSpeed %d / %d\n", XPos, YPos, Hoek,ActSpeedL, ActSpeedR);
    }
 
 //-----------------------------------------------------------------------------
@@ -93,15 +93,15 @@ void TPosition::Takt()
       long d = OdoR_ticks - OdoL_ticks;
       if (d > TICKS_360_GRADEN) {
          OdoL_ticks += TICKS_360_GRADEN;
-         printf("OdoL_ticks jump up %ld\n", OdoL_ticks);
+         CSerial.printf("OdoL_ticks jump up %ld\n", OdoL_ticks);
       }
 
       if (d < -TICKS_360_GRADEN) {
          OdoL_ticks -= TICKS_360_GRADEN;
-         printf("OdoL_ticks jump down %ld\n", OdoL_ticks);
+         CSerial.printf("OdoL_ticks jump down %ld\n", OdoL_ticks);
       }
 
-      //   printf("ActSpeedL: %d, ActSpeedR: %d, OdoL_ticks: %ld, OdoR_ticks: %ld\n",
+      //   CSerial.printf("ActSpeedL: %d, ActSpeedR: %d, OdoL_ticks: %ld, OdoR_ticks: %ld\n",
       //      ActSpeedL, ActSpeedR, OdoL_ticks, OdoR_ticks);
 
       if ((ActSpeedL !=0) || (ActSpeedR != 0)) { // als we verplaatst zijn
@@ -130,7 +130,7 @@ void TPosition::Takt()
          VarRobotYPos += tmp;
 
          Update();
-//        printf("SpeedL: %d, SpeedR: %d, Lticks: %ld, Rticks: %ld, DeltaL: %ld, DeltaR: %ld, XPos: %d YPos: %d Hoek: %d\n",
+//       CSerial.printf("SpeedL: %d, SpeedR: %d, Lticks: %ld, Rticks: %ld, DeltaL: %ld, DeltaR: %ld, XPos: %d YPos: %d Hoek: %d\n",
 //	      ActSpeedL, ActSpeedR, OdoL_ticks, OdoR_ticks, DeltaL, DeltaR, XPos, YPos, Hoek);
       }
    }
@@ -218,7 +218,7 @@ void EncoderRead (int &LeftDelta, int &RightDelta)
 //------------------------------------------------------------------------------
 void EncoderPrint()
 {
-    printf("Encoder L/R Count: %d/%d\n", EncoderLTeller, EncoderRTeller);
+    CSerial.printf("Encoder L/R Count: %d/%d\n", EncoderLTeller, EncoderRTeller);
 }
 
 //------------------------------------------------------------------------------

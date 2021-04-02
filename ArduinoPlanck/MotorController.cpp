@@ -1,21 +1,22 @@
 //-----------------------------------------------------------------------------
 // MotorController.ino
-//-----------------------------------------------------------------------------  
+//-----------------------------------------------------------------------------
 // Deze file bevat de snelheidsregeling van de robot. Mogelijk zijn aanpassingen
 // nodig, afhankelijk van de motor, snelheid en encoder van de robot.
-//-----------------------------------------------------------------------------  
+//-----------------------------------------------------------------------------
+#include "MyRobot.h"
 
-// MotorController (Mc) data structure met PID var's 
+// MotorController (Mc) data structure met PID var's
 struct tMc {
       int PrevSpeedL, PrevSpeedR; // Vorige snelheid (in mm/sec)
-      int IErrorL, IErrorR;    
+      int IErrorL, IErrorR;
    } Mc;
 
 
 //-----------------------------------------------------------------------------
 // SpeedController - regel motorsnelheid
 //-----------------------------------------------------------------------------
-// Parameters: SpeedSoll* (in mm/sec) 
+// Parameters: SpeedSoll* (in mm/sec)
 //-----------------------------------------------------------------------------
 void MotorController(int SetpointL, int SetpointR)
 {
@@ -27,7 +28,7 @@ void MotorController(int SetpointL, int SetpointR)
    volatile int SetpointL_Ticks = (SetpointL * 4L * MAIN_TAKT_INTERVAL) / ODO_TICK_TO_METRIC;
    volatile int SetpointR_Ticks = (SetpointR * 4L * MAIN_TAKT_INTERVAL) / ODO_TICK_TO_METRIC;
 
-  //printf("!! %d %d %d %d\n", SetpointL, SetpointL_Ticks, MAIN_TAKT_INTERVAL, ODO_TICK_TO_METRIC);
+  //CSerial.printf("!! %d %d %d %d\n", SetpointL, SetpointL_Ticks, MAIN_TAKT_INTERVAL, ODO_TICK_TO_METRIC);
 
    if (SetpointL_Ticks != 0) {
       //  PID motor speed control:
@@ -54,7 +55,7 @@ void MotorController(int SetpointL, int SetpointR)
       PowerL     = 0;
    }
 
-   //printf("PID_L Perr %d, Ierr %d, Derr %d, Soll %d, Act: %d\n", PError, Mc.IErrorL, DError, SetpointL_Ticks, Position.ActSpeedL);
+   //CSerial.printf("PID_L Perr %d, Ierr %d, Derr %d, Soll %d, Act: %d\n", PError, Mc.IErrorL, DError, SetpointL_Ticks, Position.ActSpeedL);
 
    if (SetpointR_Ticks != 0) {
       //  PID motor speed control:
@@ -81,7 +82,7 @@ void MotorController(int SetpointL, int SetpointR)
       PowerR     = 0;
    }
    Motors(PowerL, PowerR);
-//   printf("PID Soll: %d / %d, Ist: %d / %d, I: %d / %d, Power: %d / %d\n",
+//   CSerial.printf("PID Soll: %d / %d, Ist: %d / %d, I: %d / %d, Power: %d / %d\n",
 //         SetpointL_Ticks, SetpointR_Ticks, Position.ActSpeedL, Position.ActSpeedR, Mc.IErrorL, Mc.IErrorR, PowerL, PowerR);
 }
 

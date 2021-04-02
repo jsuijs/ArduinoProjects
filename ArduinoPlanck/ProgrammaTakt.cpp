@@ -1,6 +1,7 @@
 //-----------------------------------------------------------------------------
-// ProgrammTakt.ino
+// ProgrammTakt.cpp
 //-----------------------------------------------------------------------------
+#include "MyRobot.h"
 
 // prototypes (i.v.m. include uit ander project)
 bool Rijden1Takt(bool Init);
@@ -20,7 +21,7 @@ void ProgrammaTakt()
    if (ch) {
       // knop ingedrukt
 
-      printf("Key: %d\n", ch);
+      CSerial.printf("Key: %d\n", ch);
       if (ch == -1) {
          State = 0;           // reset, stop lopend programma / programma 'stilstaan'.
       } else {
@@ -34,10 +35,9 @@ void ProgrammaTakt()
    bool NewState = false;
    if (PrevState != State) {
       PrevState = State;
-      printf("Programma: %d\n", State);
+      CSerial.printf("Programma: %d\n", State);
       NewState = true;
    }
-
 
    // Roep actieve programma 1 t/m 12  aan.
    switch(State) {
@@ -127,7 +127,7 @@ void ProgrammaTakt()
       }
 
       default : {
-         printf("ProgrammaTakt: ongeldige state %d\n", State);
+         CSerial.printf("ProgrammaTakt: ongeldige state %d\n", State);
          State = 0;
          break;
       }
@@ -167,7 +167,7 @@ bool Rijden1Takt(bool Init)
     if (Step < -255) Oplopend = true;
 
     Driver.Power(Step, Step);
-    printf("Pwm: %d, Speed: %d / %d\n", Step, Position.ActSpeedL, Position.ActSpeedR);
+    CSerial.printf("Pwm: %d, Speed: %d / %d\n", Step, Position.ActSpeedL, Position.ActSpeedR);
     Position.Print();
 
     if (Oplopend && (Step == 0)) {
@@ -206,7 +206,7 @@ bool UmbMark1Takt(bool Init)
    if (PrevState != State) {
       PrevState = State;
       NewState = true;
-      printf("UmbMark1 state %d\n", State);
+      CSerial.printf("UmbMark1 state %d\n", State);
    }
 
    switch (State) {
@@ -319,10 +319,10 @@ bool HeenEnWeerTakt(bool Init)
    if (PrevState != State) {
       PrevState = State;
       NewState = true;
-      printf("HW state %d\n", State);
+      CSerial.printf("HW state %d\n", State);
    }
 
-   printf("hw %d %d %d %d %d\n", State, Driver.SollSpeedL, Driver.SollSpeedR, UsDistance, SharpRechts);
+   CSerial.printf("hw %d %d %d %d %d\n", State, Driver.SollSpeedL, Driver.SollSpeedR, UsDistance, SharpRechts);
 
    switch (State) {
       case 0 :    // Volg wand naar vak B
@@ -409,7 +409,7 @@ bool TTijdTakt(bool Init)
    if (PrevState != State) {
       PrevState = State;
       NewState = true;
-      printf("TTijd state %d\n", State);
+      CSerial.printf("TTijd state %d\n", State);
    }
 
    switch (State) {
@@ -445,7 +445,7 @@ bool TTijdTakt(bool Init)
       case 3 :    // Volg wand in vak B
             x = (200 - SharpRechts)/10;  // wand volgen
             Driver.SpeedHeading(TT_SNELHEID, x + 90);  // Speed, Heading
-            printf("SharpRechts: %d\n", SharpRechts);
+            CSerial.printf("SharpRechts: %d\n", SharpRechts);
 
             if (SharpLinks < 300) { // Als we de wand voor ons zien
                State++; // naar volgende state
@@ -506,7 +506,7 @@ bool TTijdTakt(bool Init)
             x = (200 - SharpRechts)/10;  // wand volgen
             x = Clip(x, -5, 5);
             Driver.SpeedHeading(TT_SNELHEID, x + 90);  // Speed, Heading
-            printf("Sharp: %d, x: %d\n", SharpRechts, x);
+            CSerial.printf("Sharp: %d, x: %d\n", SharpRechts, x);
 
             if (SharpLinks < 300) { // Als we de wand voor ons zien
                State++; // naar volgende state
@@ -619,9 +619,6 @@ bool TTijdTakt(bool Init)
    return false;  // mission nog niet gereed
 }
 
-
-
-
 //-----------------------------------------------------------------------------
 // DetectBlikTakt -
 //-----------------------------------------------------------------------------
@@ -642,7 +639,7 @@ bool DetectBlikTakt(bool Init)
    if (PrevState != State) {
       PrevState = State;
       NewState = true;
-      printf("Template state %d\n", State);
+      CSerial.printf("Template state %d\n", State);
    }
 
    switch (State) {
@@ -651,7 +648,7 @@ bool DetectBlikTakt(bool Init)
                StartRobotHoek = Position.Hoek;
                Driver.SpeedLR(100, -100);
             }
-//            printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
+//            CSerial.printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
 //            if (Driver.IsDone()) { // Als de beweging klaar is
 //               State++; // naar volgende state
 //            }
@@ -668,7 +665,7 @@ bool DetectBlikTakt(bool Init)
             if ((Ix >= 0) && (Ix < 90)) {
                 Afstanden[Ix] = UsDistance;
             }
-            printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
+            CSerial.printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
             if (Position.Hoek - StartRobotHoek > 45 ) State ++;
          break;
       }
@@ -689,7 +686,7 @@ bool DetectBlikTakt(bool Init)
                      Last = x;
                   }
                }
-               printf("Min: %d, First: %d, Last: %d", Min, First, Last);
+               CSerial.printf("Min: %d, First: %d, Last: %d", Min, First, Last);
                Target = (First + Last) / 2 - 45;
                Driver.SpeedLR(100, -100);
             }
@@ -704,7 +701,7 @@ bool DetectBlikTakt(bool Init)
                Driver.SpeedHeading(200, Target + StartRobotHoek);
 //               GrijperMagneetVast(true);
             }
-//            printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
+//            CSerial.printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
 //            if (Driver.IsDone()) { // Als de beweging klaar is
 //               State++; // naar volgende state
 //            }
@@ -725,7 +722,7 @@ bool DetectBlikTakt(bool Init)
                 EndValue = OdoT + 500;
 
             }
-            printf("OdoT: %d\n", OdoT);
+            CSerial.printf("OdoT: %d\n", OdoT);
             if ((OdoT - EndValue) > 0) {
 //              GrijperMagneetVast(false);
               State ++;
@@ -761,7 +758,7 @@ bool DetectBlikTakt(bool Init)
 //    if (PrevState != State) {
 //       PrevState = State;
 //       NewState = true;
-//       printf("Template state %d\n", State);
+//       CSerial.printf("Template state %d\n", State);
 //    }
 //
 //    switch (State) {

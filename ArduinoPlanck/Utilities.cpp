@@ -37,7 +37,7 @@ int EenparigVertragen( int Afstand, int SetSpeed, int EndSpeed, int Vertraging)
    int MaxSpeed = sqrt(Vertraging * (long) Afstand  / 2 +  EndSpeed * (long) EndSpeed);
    if (MaxSpeed < ABS(SetSpeed)) {
       // speed limited
-      //printf("EenparigVertragen %d %d %d %d %d\n", Afstand, SetSpeed, EndSpeed, Vertraging, MaxSpeed);
+      //CSerial.printf("EenparigVertragen %d %d %d %d %d\n", Afstand, SetSpeed, EndSpeed, Vertraging, MaxSpeed);
 
       if (SetSpeed > 0) {
          return  MaxSpeed; // speed limited
@@ -119,5 +119,5 @@ void Cartesian2Polar(long &hoek, int &afstand, int x, int y)
 
    afstand = (int) sqrt((long)x * (long)x + (long)y * (long)y);
 
-//   printf("Cartesian2Polar %d %d %d %d\n", (int)(hoek>>8), afstand, x, y);
+//   CSerial.printf("Cartesian2Polar %d %d %d %d\n", (int)(hoek>>8), afstand, x, y);
 }

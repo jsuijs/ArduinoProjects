@@ -17,6 +17,7 @@ class TPosition
    public:
 
       TPosition();
+      void init() { Reset(); }
       void Takt();
       void Reset();
 
@@ -74,6 +75,7 @@ class TDrive
    public:
 
       TDrive();
+      void init();
       void Takt();
       bool IsDone();
 
@@ -126,6 +128,8 @@ void Motors_A4950(int PwmL, int PwmR);
 // MotorController.
 void MotorController(int SetpointL, int SetpointR);
 
+extern int UsDistance, SharpLinks, SharpRechts;
+
 // Utilities.cpp
 int EenparigVertragen( int Afstand, int SetSpeed, int EndSpeed, int Vertraging);
 long Clip(long input, long min, long max);
@@ -133,10 +137,15 @@ void Slope(int &SlopeInOut, int Setpoint, int Step);
 long NormHoek(long hoek, long Norm);
 void Cartesian2Polar(long &hoek, int &afstand, int x, int y);
 
+// main ino
+extern bool SecondLoggingOn;
 
+// ProgrammaTakt.cpp
+void ProgrammaTakt();
+bool DetectBlikTakt(bool Init);
 
-
-
-
+// RcDispatch.cpp
+void RcDispatch(int &RcData);
+int PfKeyGet();
 
 #endif

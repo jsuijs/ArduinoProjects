@@ -1,5 +1,9 @@
+// RcDispach.cpp
+#include "MyRobot.h"
 
-int PfKey = 0;
+static int PfKey = 0;
+
+
 int PfKeyGet()
 {
    int r = PfKey;
@@ -7,17 +11,15 @@ int PfKeyGet()
    return r;   // PfKey value, 0 = no key, -1 = stop (special code)
 }
 
-
-
-void RcDispatch()
+void RcDispatch(int &RcData)
 {  int NewCode;
 
-   if (!Rc5Data) return;
+   if (!RcData) return;
 
-   Rc5Data &= 0xF7FF;   // mask toggle bit
-   printf("Rc5: 0x%04x\n", Rc5Data);
-   NewCode = Rc5Data;
-   Rc5Data = 0;
+   RcData &= 0xF7FF;   // mask toggle bit
+   CSerial.printf("Rc5: 0x%04x\n", RcData);
+   NewCode = RcData;
+   RcData = 0;
 
    switch(NewCode) {
 
@@ -39,7 +41,6 @@ void RcDispatch()
          break;
       }
 
-
       // PF-keys
       case 0x3775 : { PfKey = -1;   break; } // STOP (special, but passed to ProgrammaTakt)
 
@@ -57,5 +58,4 @@ void RcDispatch()
       case 0x3750 : { PfKey = 12;   break; } // store
 
    }
-
 }

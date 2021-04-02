@@ -26,7 +26,7 @@ void MotorsSetup_A4950()
 //------------------------------------------------------------------------------
 void Motors_A4950(int PwmL, int PwmR)
 {
-  //  printf("Motors %d %d\n", PwmL, PwmR);
+  //  CSerial.printf("Motors %d %d\n", PwmL, PwmR);
   //--------
   // Motor L
   //--------
