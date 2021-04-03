@@ -56,8 +56,7 @@ void setup() {
    Driver.init();    // delayed constructor
 
    SetupMotors();
-
-//   EncoderSetup();
+   InitStmEncoders();
 
    // Link PinChange interrupt to RC5 reader.
    attachInterrupt(PB4, Rc5Isr, CHANGE);
@@ -102,7 +101,6 @@ void loop() {
          //
          // CSerial.printf("Encoder L/R TPrev %d/%d TAct: %d/%d, Count: %d/%d\n",
          //       EncoderLPeriode, EncoderRPeriode, EncoderL_LopendePeriode, EncoderR_LopendePeriode, EncoderLTeller, EncoderRTeller);
-         EncoderPrint();
          Position.Print();
          CSerial.printf("encoder pins %d %d %d %d\n", digitalRead(ENCODER_L_PIN_A), digitalRead(ENCODER_L_PIN_B), digitalRead(ENCODER_R_PIN_A), digitalRead(ENCODER_R_PIN_B));
          //int Batterij = analogRead(BATTERIJ_PIN);

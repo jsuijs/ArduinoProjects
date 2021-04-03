@@ -52,11 +52,15 @@ class TPosition
 };
 
 // Encoders
-void EncoderSetup();
-void EncoderRead (int &LeftDelta, int &RightDelta);
-void EncoderPrint();
-void IsrEncoderL();
-void IsrEncoderR();
+//void EncoderSetup();
+//void EncoderRead (int &LeftDelta, int &RightDelta);
+//void EncoderPrint();
+//void IsrEncoderL();
+//void IsrEncoderR();
+
+void InitStmEncoders();
+void ReadStmEncodersDelta(int &Left, int &Right);
+
 extern volatile int EncoderLTeller, EncoderRTeller;  // aantal flanken
 
 // Motors.cpp

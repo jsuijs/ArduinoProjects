@@ -21,8 +21,7 @@ void SetupMotors()
   pinMode(TB6612_PWML, OUTPUT);
   pinMode(TB6612_PWMR, OUTPUT);
 
-  // pinMode( ENABLE_MOTOR, OUTPUT);  // av
-  // digitalWrite(ENABLE_MOTOR, 1);   // av Motoren aan
+  analogWriteFrequency(20000); // Set PMW period to 2000 Hz instead of 1000
 
   // zet output op 0 via Motors()
   Motors(0, 0);

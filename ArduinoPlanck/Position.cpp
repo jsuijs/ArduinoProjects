@@ -76,7 +76,7 @@ void TPosition::Takt()
       static long OdoTickLR_Correction = 0;
 
       // Haal encoder gegevens op
-      EncoderRead (ActSpeedL, ActSpeedR);
+      ReadStmEncodersDelta(ActSpeedL, ActSpeedR);
 
       // Corrigeer voor verschil in wiel-grootte
       OdoTickLR_Correction += ActSpeedR * (long)ODO_TICK_L_R;
@@ -177,70 +177,84 @@ void TPosition::Update()
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-volatile int EncoderLTeller, EncoderRTeller;  // aantal flanken
 
-//------------------------------------------------------------------------------
-// EncoderSetup -
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-void EncoderSetup()
+#define MAQUEENPLUS_PIN_ENCODER_L_A    PA6   //PA6
+#define MAQUEENPLUS_PIN_ENCODER_L_B    PA7   //PA7
+#define MAQUEENPLUS_TIMER_ENCL         TIM3  // 16 bits timer/counter
+
+#define MAQUEENPLUS_PIN_ENCODER_R_A    PA1    //PA0
+#define MAQUEENPLUS_PIN_ENCODER_R_B    PA0    //PA1
+#define MAQUEENPLUS_TIMER_ENCR         TIM2  // 16 bits timer/counter
+
+HardwareTimer TimerEncL(MAQUEENPLUS_TIMER_ENCL);
+HardwareTimer TimerEncR(MAQUEENPLUS_TIMER_ENCR);
+
+void InitStmEncoders()
 {
-  attachInterrupt(ENCODER_L_PIN_A, IsrEncoderL, CHANGE);
-  attachInterrupt(ENCODER_R_PIN_A, IsrEncoderR, CHANGE);
+   //-----------------------------------------------------------------------
+   // Init hardware quadrature encoders & corresponding IO
+   //-----------------------------------------------------------------------
+   pinMode(MAQUEENPLUS_PIN_ENCODER_L_A, INPUT_PULLUP);
+   pinMode(MAQUEENPLUS_PIN_ENCODER_L_B, INPUT_PULLUP);
+   pinMode(MAQUEENPLUS_PIN_ENCODER_R_A, INPUT_PULLUP);
+   pinMode(MAQUEENPLUS_PIN_ENCODER_R_B, INPUT_PULLUP);
+
+   // setup hardware quadrature encoders (requires STM32Cube functions)
+   TIM_HandleTypeDef    Encoder_Handle;
+   TIM_Encoder_InitTypeDef sEncoderConfig;
+
+   /* Initialize TIM* peripheral as follow:
+       + Period = 65535
+       + Prescaler = 0
+       + ClockDivision = 0
+       + Counter direction = Up
+
+      https://community.st.com/s/question/0D50X00009XkfbN/quadrature-encoder
+      STM32Cube_FW_F4_V1.16.0\Projects\STM32469I_EVAL\Examples\TIM\TIM_Encoder\Src\main.c
+   */
+
+   Encoder_Handle.Init.Period             = 65535;
+   Encoder_Handle.Init.Prescaler          = 0;
+   Encoder_Handle.Init.ClockDivision      = 0;
+   Encoder_Handle.Init.CounterMode        = TIM_COUNTERMODE_UP;
+   Encoder_Handle.Init.RepetitionCounter  = 0;
+   Encoder_Handle.Init.AutoReloadPreload  = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+   sEncoderConfig.EncoderMode             = TIM_ENCODERMODE_TI12;
+
+   sEncoderConfig.IC1Polarity             = TIM_ICPOLARITY_RISING;
+   sEncoderConfig.IC1Selection            = TIM_ICSELECTION_DIRECTTI;
+   sEncoderConfig.IC1Prescaler            = TIM_ICPSC_DIV1;
+   sEncoderConfig.IC1Filter               = 0;
+
+   sEncoderConfig.IC2Polarity             = TIM_ICPOLARITY_RISING;
+   sEncoderConfig.IC2Selection            = TIM_ICSELECTION_DIRECTTI;
+   sEncoderConfig.IC2Prescaler            = TIM_ICPSC_DIV1;
+   sEncoderConfig.IC2Filter               = 0;
+
+   Encoder_Handle.Instance = MAQUEENPLUS_TIMER_ENCL;
+   if(HAL_TIM_Encoder_Init(&Encoder_Handle, &sEncoderConfig) != HAL_OK) Serial2.println("TIM2 init error");
+   HAL_TIM_Encoder_Start(&Encoder_Handle, TIM_CHANNEL_ALL);
+
+   Encoder_Handle.Instance = MAQUEENPLUS_TIMER_ENCR;
+   if(HAL_TIM_Encoder_Init(&Encoder_Handle, &sEncoderConfig) != HAL_OK) Serial2.println("TIM3 init error");
+   HAL_TIM_Encoder_Start(&Encoder_Handle, TIM_CHANNEL_ALL);
+
+//   systick_attach_callback(&encoder1_read);
 }
 
-//------------------------------------------------------------------------------
-// EncoderRead - Lees delta van encoders (sinds laatste aanroep)
-//------------------------------------------------------------------------------
-// Let op: parameters zijn referenties en kunnen dus gebruikt
-//         worden om waarden terug te geven.
-//------------------------------------------------------------------------------
-void EncoderRead (int &LeftDelta, int &RightDelta)
-{  int CopyL, CopyR;
-   static int LastL, LastR;
+void ReadStmEncodersDelta(int &Left, int &Right)
+   {  static int RawEncoderLeft, RawEncoderRight;
 
-  // maak copy zonder dat er interrupts tussendoor komen.
-  noInterrupts();
-  // critical, time-sensitive code here
-  CopyL = EncoderLTeller;
-  CopyR = EncoderRTeller;
-  interrupts();
+      // save prev values
+      int PrevEncoderLeft  = RawEncoderLeft;
+      int PrevEncoderRight = RawEncoderRight;
 
-  LeftDelta  = CopyL - LastL;
-  RightDelta = CopyR - LastR;
-  LastL = CopyL;
-  LastR = CopyR;
-}
+      // read raw
+      RawEncoderLeft  = -TimerEncL.getCount(); // flip sign here if required
+      RawEncoderRight = TimerEncR.getCount(); // flip sign here if required
 
-//------------------------------------------------------------------------------
-// EncoderPrint - print (low level) encoder info
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-void EncoderPrint()
-{
-    CSerial.printf("Encoder L/R Count: %d/%d\n", EncoderLTeller, EncoderRTeller);
-}
-
-//------------------------------------------------------------------------------
-// Encoder ISR routines
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-
-void IsrEncoderL()
-{
-  if (digitalRead(ENCODER_L_PIN_B) != digitalRead(ENCODER_L_PIN_A)) {
-    EncoderLTeller++;                            // stapje vooruit
-  } else {
-    EncoderLTeller--;                            // stapje achteruit
-  }
-}
-
-void IsrEncoderR()
-{
-  if (digitalRead(ENCODER_R_PIN_B) != digitalRead(ENCODER_R_PIN_A)) {
-    EncoderRTeller++;                            // stapje vooruit
-  } else {
-    EncoderRTeller--;                            // stapje achteruit
-  }
-}
-
+      // difference (cast to short int required to properly handle wrap around of 16-bit counters)
+      Left  = (short int)(RawEncoderLeft  - PrevEncoderLeft);
+      Right = (short int)(RawEncoderRight - PrevEncoderRight);
+   }
