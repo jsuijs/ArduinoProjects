@@ -131,7 +131,7 @@ void Motors_A4950(int PwmL, int PwmR);
 // MotorController.
 void MotorController(int SetpointL, int SetpointR);
 
-extern int UsDistance, SharpLinks, SharpRechts;
+extern int SharpLinks, SharpRechts;
 
 // Utilities.cpp
 int EenparigVertragen( int Afstand, int SetSpeed, int EndSpeed, int Vertraging);

@@ -6,8 +6,8 @@
 void DummyFunctie() { }
 
 // Robot-specifieke parameters
+#define RC5_CPP
 #include "MyRobot.h"
-
 
 // include Position class & instantieer
 TPosition Position;
@@ -21,21 +21,7 @@ long SharpLinks_Gemiddelde, SharpRechts_Gemiddelde;
 
 int Lijn;  // 0..7, 3 bits. 0 = wit, 7 = zwart, 1 = links, 2 = midden, 4 = rechts
 
-//#include <NewPing.h>
-//#define TRIGGER_PIN  3
-//#define ECHO_PIN     4
-//#define MAX_DISTANCE 200
-//NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
-
-unsigned long pingTimer;     // Holds the next ping time.
-
-int UsDistance;
-
-
-//HardwareSerial Serial(USART1);
-
 HardwareSerial Serial2 (PA3, PA2);
-
 
 //---------------------------------------------------------------------------------------
 // RC5 stuff start
@@ -43,8 +29,8 @@ HardwareSerial Serial2 (PA3, PA2);
 #include "RC5.h"
 
 int Rc5Data;  // Set on receive, feel free to set to zero when done.
-int IR_PIN = 2;
-int RC5_INTERRUPT = 0;
+int IR_PIN = PB4;
+//int RC5_INTERRUPT = 0;
 RC5 rc5(IR_PIN);
 
 void Rc5Isr()
@@ -60,10 +46,6 @@ void Rc5Isr()
 // Rc5 stuff done (but do not forget to attach Rc5Isr() to IrPin).
 //---------------------------------------------------------------------------------------
 
-
-//#include <Servo.h>
-//Servo myservo;  // create servo object to control a servo
-// the setup routine runs once when you press reset:
 void setup() {
    // start serial
    CSerial.begin(115200);
@@ -73,25 +55,23 @@ void setup() {
    Position.init();  // delayed constructor
    Driver.init();    // delayed constructor
 
-//   MotorsSetup();
+   SetupMotors();
 
 //   EncoderSetup();
 
    // Link PinChange interrupt to RC5 reader.
-   //attachInterrupt(RC5_INTERRUPT, Rc5Isr, CHANGE);
-
-   pingTimer = millis(); // Start now.
+   attachInterrupt(PB4, Rc5Isr, CHANGE);
 
    CSerial.printf("Opstarten gereed.\n");
-
-   for (;;) {}
 }
 
 void loop() {
    static int NextMainTakt;
    static int NextSecTakt;
    static int PrevMs;
-//   RcDispatch(Rc5Data);
+
+   RcDispatch(Rc5Data);
+
    // eens per miliseconde
    int ms = millis();
    if (ms != PrevMs) {  // miliseconde takt
@@ -110,11 +90,7 @@ void loop() {
       ProgrammaTakt(); // Voer (stapje van) geselecteerde programma uit
       Driver.Takt();   // stuur motoren aan
    }
-   if (millis() >= pingTimer) {   // pingSpeed milliseconds since last ping, do another ping.
-      pingTimer += 50;           // Set the next ping time.
-//      UsDistance = 10 * sonar.ping_cm(); // Ping returned, uS result in ping_result, convert to cm with US_ROUNDTRIP_CM.
-//      sonar.ping_timer(echoCheck); // Send out the ping, calls "echoCheck" function every 24uS where you can check the ping status.
-   }
+
    // Seconde interval
    ms = millis();
    if ((ms - NextSecTakt) > 0) {
@@ -134,25 +110,10 @@ void loop() {
          //CSerial.printf("Batterij: %d (V * 10) (%d)\n", Spanning, Batterij);
 //         CSerial.printf("Sharp %d %d %d %d\n", SharpLinks, SharpRechts, (int)analogRead(SHARP_LINKS_PIN), (int)analogRead(SHARP_RECHTS_PIN) );
 //         CSerial.printf("Lijn: %d (%d %d %d)\n", Lijn, digitalRead(5), digitalRead(6), digitalRead(7));
-//         CSerial.printf("Sonar: %d\n", UsDistance);
       }
    }
 }
 
-
-
-//void echoCheck() { // Timer2 interrupt calls this function every 24uS where you can check the ping status.
-//  // Don't do anything here!
-//  if (sonar.check_timer()) { // This is how you check to see if the ping was received.
-//    // Here's where you can add code.
-////    Serial.print("Ping: ");
-////    Serial.print(sonar.ping_result / US_ROUNDTRIP_CM); // Ping returned, uS resul
-//    UsDistance = 10 * sonar.ping_result / US_ROUNDTRIP_CM; // Ping returned, uS result in ping_result, convert to cm with US_ROUNDTRIP_CM.
-////    UsDistance = 10 * sonar.ping_cm(); // Ping returned, uS result in ping_result, convert to cm with US_ROUNDTRIP_CM.
-////    Serial.println("cm");
-//  }
-//  // Don't do anything here!
-//}
 
 void BlinkTakt()
 {  static int Count;
@@ -165,23 +126,4 @@ void BlinkTakt()
    Count ++;
 }
 
-//ISR(TIMER1_COMPA_vect)
-//{
-////  handle_interrupts(_timer1, &TCNT1, &OCR1A);
-//  //static bool Toggle;
-//  static bool State;
-//
-//  if (State) {
-//    // set pin
-//    digitalWrite(53, 1);
-//    OCR1A = ServoTime * 2;  // time in us * 2
-//    TCNT1 = 0;      // restart cycle
-//    State = 0;
-//  } else {
-//    digitalWrite(53, 0);
-//    OCR1A  = 40000;  // cycle time 20ms
-//    State = 1;
-//  }
-//}
-// Servo Stuff
 //---------------------------------------------------------------------------------------

@@ -18,9 +18,9 @@
 //
 //    void SpeedLRTakt(bool NewMovement, int SpeedL, int SpeedR, int MaxSlopeP);
 //
-// Dit is een private methode, die je dus niet zelf aanroept. Dat
-// doet de Takt() methode. Maar... hier gebeurt het echte werk, op basis van
-// de parameters die je via SpeedLR() hebt ingesteld.
+// Dit is een private methode, die je dus niet zelf aanroept. Dat doet de Takt()
+// methode. Maar... hier gebeurt het echte werk, op basis van de parameters die
+// je via SpeedLR() hebt ingesteld.
 //
 // Tot slot de methode
 //

@@ -325,7 +325,7 @@ bool HeenEnWeerTakt(bool Init)
       CSerial.printf("HW state %d\n", State);
    }
 
-   CSerial.printf("hw %d %d %d %d %d\n", State, Driver.SollSpeedL, Driver.SollSpeedR, UsDistance, SharpRechts);
+   CSerial.printf("hw %d %d %d %d\n", State, Driver.SollSpeedL, Driver.SollSpeedR, SharpRechts);
 
    switch (State) {
       case 0 :    // Volg wand naar vak B
@@ -335,9 +335,9 @@ bool HeenEnWeerTakt(bool Init)
             x = (250 - SharpRechts)/10;  // wand volgen
             Driver.SpeedHeading(HW_SNELHEID, x);  // Speed, Heading
 
-            if (UsDistance < 500) { // Als we de wand voor ons zien
-               State++; // naar volgende state
-            }
+//            if (UsDistance < 500) { // Als we de wand voor ons zien
+//               State++; // naar volgende state
+//            }
          break;
 
       case 1 :    // Stop
@@ -374,9 +374,9 @@ bool HeenEnWeerTakt(bool Init)
             x = 180 + (SharpLinks - 250)/10;  // wand volgen
             Driver.SpeedHeading(HW_SNELHEID, x);  // Speed, Heading
 
-            if (UsDistance < 500) { // Als we de wand voor ons zien
-               State++; // naar volgende state
-            }
+//            if (UsDistance < 500) { // Als we de wand voor ons zien
+//               State++; // naar volgende state
+//            }
          break;
 
       case 5 :    // Stop
@@ -666,9 +666,9 @@ bool DetectBlikTakt(bool Init)
             }
             int Ix = Position.Hoek + 45 - StartRobotHoek;
             if ((Ix >= 0) && (Ix < 90)) {
-                Afstanden[Ix] = UsDistance;
+//                Afstanden[Ix] = UsDistance;
             }
-            CSerial.printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
+//            CSerial.printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
             if (Position.Hoek - StartRobotHoek > 45 ) State ++;
          break;
       }
@@ -708,7 +708,7 @@ bool DetectBlikTakt(bool Init)
 //            if (Driver.IsDone()) { // Als de beweging klaar is
 //               State++; // naar volgende state
 //            }
-            if (UsDistance < 40) State ++;
+//            if (UsDistance < 40) State ++;
          break;
       }
 
