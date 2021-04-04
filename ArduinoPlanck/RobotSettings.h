@@ -12,17 +12,6 @@
 //#define BATTERIJ_PIN    A7
 #define BUZZER_PIN      PB5
 
-//#define SHARP_LINKS_PIN    A0
-//#define SHARP_RECHTS_PIN   A1
-
-#define ENCODER_L_PIN_A       PB6 //25
-#define ENCODER_L_PIN_B       PB7 //18 // interrupt 5
-//#define ENCODER_L_INTERRUPT    5 // pin 18
-
-#define ENCODER_R_PIN_A       PA0 //24
-#define ENCODER_R_PIN_B       PA1 //19 // interrupt 4
-//#define ENCODER_R_INTERRUPT    4 // pin 19
-
 //-----------------------------------------------------------------------------
 // Motor configuration
 //#define USE_A4950
@@ -53,14 +42,12 @@ const int TB6612_DIRR_B2   = PA9;   // pin 26  jumper pin 31 PB12
 #define MAX_SLOPE           10   // in mm/sec/MAIN_TAKT_INTERVAL
 
 // Encoder parameters (Position.h)
-#define ODO_TICK_TO_METRIC      1100   // afstand per tick, voor het linkse wiel, 4096 betekent dat 1 tick => 1 mm
+#define ODO_TICK_TO_METRIC       508   // afstand per tick, voor het linkse wiel, 4096 betekent dat 1 tick => 1 mm
 #define ODO_TICK_L_R            4096   // correctie voor afwijking wielgrootte rechtse wiel t.o.v. links, 4096 = even groot
 
-#define ODO_HEADING             5100   // vertaal odo ticks naar hoek, groter => meer graden per tick
+#define ODO_HEADING             2700   // vertaal odo ticks naar hoek, groter => meer graden per tick
                                        // ODO_HEADING = (ODO_TICK_TO_METRIC * 917) / WIELBASIS (in mm)
                                        // Als de robot te weinig draait, moet dit getal lager worden
-
-
 
 // Motor PID (MPID) parameters (Drive.h)
 #define MPID_I_MAX      100      // integrator limit

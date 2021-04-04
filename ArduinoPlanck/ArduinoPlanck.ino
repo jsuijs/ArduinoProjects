@@ -16,8 +16,6 @@ TPosition Position;
 TDrive Driver;
 bool SecondLoggingOn = true;
 
-int SharpLinks, SharpRechts;    // sharp meting - afstand in mm
-long SharpLinks_Gemiddelde, SharpRechts_Gemiddelde;
 
 int Lijn;  // 0..7, 3 bits. 0 = wit, 7 = zwart, 1 = links, 2 = midden, 4 = rechts
 
@@ -75,8 +73,6 @@ void loop() {
    int ms = millis();
    if (ms != PrevMs) {  // miliseconde takt
       PrevMs = ms;  // bewaar huidige tijd
-//      SharpLinks   = SharpTakt(SHARP_LINKS_PIN,   SharpLinks_Gemiddelde,   400*148L);
-//      SharpRechts = SharpTakt(SHARP_RECHTS_PIN, SharpRechts_Gemiddelde, 400*148L);
       BlinkTakt();
       Lijn = 7 - (digitalRead(5) * 1 + digitalRead(6) * 2 + digitalRead(7) * 4);
    }
@@ -102,11 +98,9 @@ void loop() {
          // CSerial.printf("Encoder L/R TPrev %d/%d TAct: %d/%d, Count: %d/%d\n",
          //       EncoderLPeriode, EncoderRPeriode, EncoderL_LopendePeriode, EncoderR_LopendePeriode, EncoderLTeller, EncoderRTeller);
          Position.Print();
-         CSerial.printf("encoder pins %d %d %d %d\n", digitalRead(ENCODER_L_PIN_A), digitalRead(ENCODER_L_PIN_B), digitalRead(ENCODER_R_PIN_A), digitalRead(ENCODER_R_PIN_B));
          //int Batterij = analogRead(BATTERIJ_PIN);
          //int Spanning = (int) (145L * Batterij / 960);  // 14.8 volt geeft waarde 964
          //CSerial.printf("Batterij: %d (V * 10) (%d)\n", Spanning, Batterij);
-//         CSerial.printf("Sharp %d %d %d %d\n", SharpLinks, SharpRechts, (int)analogRead(SHARP_LINKS_PIN), (int)analogRead(SHARP_RECHTS_PIN) );
 //         CSerial.printf("Lijn: %d (%d %d %d)\n", Lijn, digitalRead(5), digitalRead(6), digitalRead(7));
       }
    }
