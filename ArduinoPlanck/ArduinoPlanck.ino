@@ -23,7 +23,6 @@ HardwareSerial Serial2 (PA3, PA2);
 
 //---------------------------------------------------------------------------------------
 // RC5 stuff start
-//#include <PinChangeInt.h>
 #include "RC5.h"
 
 int Rc5Data;  // Set on receive, feel free to set to zero when done.
