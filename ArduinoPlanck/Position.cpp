@@ -233,11 +233,11 @@ void InitStmEncoders()
    sEncoderConfig.IC2Filter               = 0;
 
    Encoder_Handle.Instance = MAQUEENPLUS_TIMER_ENCL;
-   if(HAL_TIM_Encoder_Init(&Encoder_Handle, &sEncoderConfig) != HAL_OK) Serial2.println("TIM2 init error");
+   if(HAL_TIM_Encoder_Init(&Encoder_Handle, &sEncoderConfig) != HAL_OK) CSerial.println("TIM2 init error");
    HAL_TIM_Encoder_Start(&Encoder_Handle, TIM_CHANNEL_ALL);
 
    Encoder_Handle.Instance = MAQUEENPLUS_TIMER_ENCR;
-   if(HAL_TIM_Encoder_Init(&Encoder_Handle, &sEncoderConfig) != HAL_OK) Serial2.println("TIM3 init error");
+   if(HAL_TIM_Encoder_Init(&Encoder_Handle, &sEncoderConfig) != HAL_OK) CSerial.println("TIM3 init error");
    HAL_TIM_Encoder_Start(&Encoder_Handle, TIM_CHANNEL_ALL);
 
 //   systick_attach_callback(&encoder1_read);

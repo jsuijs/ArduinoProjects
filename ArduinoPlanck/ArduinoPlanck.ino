@@ -2,12 +2,10 @@
 // Planck.ino
 //-----------------------------------------------------------------------------
 
-// Dummy functie, zodat Arduino de vereiste prototypes plaatst.
-void DummyFunctie() { }
-
 // Robot-specifieke parameters
 #define RC5_CPP
 #include "MyRobot.h"
+#include "Libs\Utilities.cpp"
 
 // include Position class & instantieer
 TPosition Position;
@@ -16,6 +14,18 @@ TPosition Position;
 TDrive Driver;
 bool SecondLoggingOn = true;
 
+// Setup command interpreter
+void Execute();   // prototype
+#include "Libs/Commands.h"
+TCommand Command(Execute);
+
+// Setup i2c & Lidar Preprocessor
+#include <Wire.h>
+TwoWire Wire2(PB11, PB10);
+#define LppWire Wire2
+
+#include "Libs/LppMaster.h"
+TLpp Lpp;
 
 int Lijn;  // 0..7, 3 bits. 0 = wit, 7 = zwart, 1 = links, 2 = midden, 4 = rechts
 
@@ -23,7 +33,7 @@ HardwareSerial Serial2 (PA3, PA2);
 
 //---------------------------------------------------------------------------------------
 // RC5 stuff start
-#include "RC5.h"
+#include "Libs/RC5.h"
 
 int Rc5Data;  // Set on receive, feel free to set to zero when done.
 int IR_PIN = PB4;
@@ -55,8 +65,33 @@ void setup() {
    SetupMotors();
    InitStmEncoders();
 
+   pinMode(PB1, OUTPUT);    //Led op Maple-Mini
+
    // Link PinChange interrupt to RC5 reader.
    attachInterrupt(PB4, Rc5Isr, CHANGE);
+
+   LppWire.begin();
+   if (Lpp.begin()) {
+
+      Lpp.SetOffsetDegrees(180);       //180 Align lidar with robotlib coordinate system
+      Lpp.SetReverse(0);            // 1
+
+      Lpp.ArraySetup(70, 20, 11);      // Setup array with 11 segments of 20 degrees
+      Lpp.SensorSetup(0, -15, 30);    // Setup Sensor 0 to detect achterwaards objects (-15 + 30 = +15 graden)
+      Lpp.SensorSetup(1, 90, 180);    // Sensor 1, vanaf 90 graden, (+90 + 180 = 270 graden)
+      Lpp.SensorSetup(2, 135, 90);    // Sensor 2, vanaf 135 graden, segment van 90 graden
+      Lpp.SensorSetup(3, 70, 40);     // Sensor 3, vanaf 70 graden, segment van 40 graden LockDown 5=8-Slalom
+      Lpp.SensorSetup(4, 110, 40);    // Sensor 4, vanaf 110 graden, segment van 40 graden
+      Lpp.SensorSetup(5, 150, 60);    // Sensor 4, vanaf 150 graden, segment van 60 graden
+      Lpp.SensorSetup(6, 210, 40);    // Sensor 4, vanaf 210 graden, segment van 40 graden
+      Lpp.SensorSetup(7, 250, 40);    // Sensor 7, vanaf 250 graden, segment van 40 graden
+
+      // Lees en print status (ter informatie)
+      Lpp.ReadStatus();
+      Lpp.PrintStatus();
+   } else {
+      CSerial.printf("LPP I2C error.\n");
+   }
 
    CSerial.printf("Opstarten gereed.\n");
 }
@@ -103,18 +138,48 @@ void loop() {
 //         CSerial.printf("Lijn: %d (%d %d %d)\n", Lijn, digitalRead(5), digitalRead(6), digitalRead(7));
       }
    }
+
+   Command.Takt(CSerial);  // Console command interpreter
 }
 
 
 void BlinkTakt()
 {  static int Count;
 
-
-   if (Count > 300) {
-      digitalWrite(7, ! digitalRead(7));
+   if (Count > 100) {
+      digitalWrite(PB1, ! digitalRead(PB1));
       Count = 0;
    }
    Count ++;
 }
 
-//---------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Execute - voer commando uit
+//-----------------------------------------------------------------------------
+// wordt via CmdTakt() aangeroepen als een commando is ontvangen
+// via de serial port.
+//-----------------------------------------------------------------------------
+void Execute(int Param[])
+{  int SpeedSp;
+
+   if (Command.Match("?",              0))  CSerial.printf("ArduinoPlanck command parser.\n");
+
+//   // setup
+   if (Command.Match("speed",          1))  SpeedSp    = Param[0];
+//   if (Command.Match("slope",          1))  SpeedSlope = Param[0];
+//
+//   // basic operation
+//   if (Command.Match("start",          0))  { DriveState = 1;   printf("Run Start\n");     }
+//   if (Command.Match("reset",          0))  { SolverReset();    printf("Solver reset\n");  }
+//   if (Command.Match("stop",           0))  { DriveState = 0;   printf("Run Stop\n");      }
+//
+//   // c - calibrate moves
+//   if (Command.Match("c360",           0))  { DriveState = 900; printf("Turn 360\n");      }
+//
+//   // debug & (hw) diagnostic
+//   if (Command.Match("dset",           1))  DebugSet(Param[0]);
+//   if (Command.Match("dclr",           1))  DebugClear(Param[0]);
+//   if (Command.Match("line",           0))  LineSensor(true);
+//   if (Command.Match("line2",          1))  printf("linesensor %d, value: %d\n", Param[0], Robot.LineSensorRead(Param[0]));
+//   if (Command.Match("motors",         2))  Robot.Motors(Param[0], Param[1]);
+}

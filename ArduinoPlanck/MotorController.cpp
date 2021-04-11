@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// MotorController.ino
+// MotorController.cpp
 //-----------------------------------------------------------------------------
 // Deze file bevat de snelheidsregeling van de robot. Mogelijk zijn aanpassingen
 // nodig, afhankelijk van de motor, snelheid en encoder van de robot.
@@ -11,7 +11,6 @@ struct tMc {
       int PrevSpeedL, PrevSpeedR; // Vorige snelheid (in mm/sec)
       int IErrorL, IErrorR;
    } Mc;
-
 
 //-----------------------------------------------------------------------------
 // SpeedController - regel motorsnelheid

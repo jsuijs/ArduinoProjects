@@ -4,7 +4,6 @@
 #include "MyRobot.h"
 #include "math.h"
 
-
 //----------------------------------------------------------------------------
 // EenparigVertragen - Begrens snelheid, afhankelijk van afstand tot einde
 //----------------------------------------------------------------------------
