@@ -375,6 +375,8 @@ bool TCommand::AddParam( int Value )
       return true;
    }
 
+#ifndef HEXDUMP_DEFINED
+#define HEXDUMP_DEFINED
 //-----------------------------------------------------------------------------
 // HexDump - Dump Data in hex format
 //-----------------------------------------------------------------------------
@@ -430,6 +432,7 @@ void HexDump( const void *Data, unsigned int Length, unsigned int Offset)
       printf( "\n" );
    }
 }
+#endif
 
 //-----------------------------------------------------------------------------
 // Bcd - convert decimal value to bcd.
