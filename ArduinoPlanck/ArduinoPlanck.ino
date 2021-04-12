@@ -173,6 +173,8 @@ void Execute(int Param[])
    if (Command.Match("drivestop",      0)) Driver.Stop();
 
    if (Command.Match("lppstatus",      0)) { Lpp.ReadStatus(); Lpp.PrintStatus(); }
+   if (Command.Match("lppstart",       0)) Lpp.Start();
+   if (Command.Match("lppstop",        0)) Lpp.Stop();
 
    if (Command.Match("pfkey",          1)) PfKeySet(Param[0]);
 
