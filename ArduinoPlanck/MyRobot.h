@@ -87,7 +87,7 @@ class TDrive
       bool IsDone();
 
       // bewegingen
-      void Pwm(int PowerL, int PowerR);
+      void Pwm(int PwmL, int PwmR);
       void SpeedLR(int SpeedL, int SpeedR);
       void SpeedHeading(int Speed, int Heading);
       void XY(int X, int Y, int Speed, int EndSpeed);
