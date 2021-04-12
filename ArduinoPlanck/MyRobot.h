@@ -74,7 +74,7 @@ extern TPosition Position;
 //-----------------------------------------------------------------------------
 
 // Constante per bewegingstype (DriveMode) die we ondersteunen.
-enum TDiveMode { UNDEFINED, M_POWER, M_SPEED_LR, M_SPEED_HEADING, M_XY, M_ROTATE, M_ARC, M_STOP };
+enum TDiveMode { UNDEFINED, M_PWM, M_SPEED_LR, M_SPEED_HEADING, M_XY, M_ROTATE, M_ARC, M_STOP };
 
 
 class TDrive
@@ -87,7 +87,7 @@ class TDrive
       bool IsDone();
 
       // bewegingen
-      void Power(int PowerL, int PowerR);
+      void Pwm(int PowerL, int PowerR);
       void SpeedLR(int SpeedL, int SpeedR);
       void SpeedHeading(int Speed, int Heading);
       void XY(int X, int Y, int Speed, int EndSpeed);

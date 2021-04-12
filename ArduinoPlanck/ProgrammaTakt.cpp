@@ -47,7 +47,7 @@ void ProgrammaTakt()
    // Roep actieve programma 1 t/m 12  aan.
    switch(State) {
       case 0 : { // Programma: stil staan
-         Driver.Power(0,0);
+         Driver.Pwm(0,0);
          break;
       }
 
@@ -59,7 +59,7 @@ void ProgrammaTakt()
       }
 
       case 2 : { // Programma: max_pwm
-         Driver.Power(155, 155);
+         Driver.Pwm(155, 155);
          break;
       }
 
@@ -171,7 +171,7 @@ bool Rijden1Takt(bool Init)
     if (Step >  255) Oplopend = false;
     if (Step < -255) Oplopend = true;
 
-    Driver.Power(Step, Step);
+    Driver.Pwm(Step, Step);
     CSerial.printf("Pwm: %d, Speed: %d / %d\n", Step, Position.ActSpeedL, Position.ActSpeedR);
     Position.Print();
 

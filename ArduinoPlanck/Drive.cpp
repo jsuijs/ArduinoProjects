@@ -51,8 +51,8 @@ TDrive::TDrive()
 //-----------------------------------------------------------------------------
 void TDrive::init()
    {
-      // reset : PWM power mode, output 0.
-      Power(0, 0);
+      // reset : PWM mode, output 0.
+      Pwm(0, 0);
       MaxSlope = MAX_SLOPE;
    }
 
@@ -86,7 +86,7 @@ void TDrive::Takt()
 
       //      printf("Drive.Takt %d %d %d\n", DriveMode, Param1, Param2);
       switch(DriveMode) {
-         case M_POWER : {
+         case M_PWM : {
             Motors(Param1, Param2);
             break;
          }
@@ -132,20 +132,20 @@ bool TDrive::IsDone()
    }
 
 //-----------------------------------------------------------------------------
-// Power - rij met gegeven pwm waarden (L, R)
+// TDrive::Pwm - rij met gegeven pwm waarden (L, R)
 //-----------------------------------------------------------------------------
-// Power is pwm waarde + rijrichting, range 255...-255
+// Pwm* is pwm waarde + rijrichting, range 255...-255
 //-----------------------------------------------------------------------------
-void TDrive::Power(int PowerL, int PowerR)
+void TDrive::Pwm(int PwmL, int PwmR)
    {
-      if (DriveMode != M_POWER) {
-         CSerial.printf("Drive.Power\n");
+      if (DriveMode != M_PWM) {
+         CSerial.printf("Drive.Pwm\n");
          NewMovement = true;
       }
 
-      DriveMode = M_POWER;
-      Param1 = PowerL;
-      Param2 = PowerR;
+      DriveMode = M_PWM;
+      Param1 = PwmL;
+      Param2 = PwmR;
 
       IsDoneFlag = false;
    }

@@ -162,10 +162,17 @@ void BlinkTakt()
 void Execute(int Param[])
 {  int SpeedSp;
 
-   if (Command.Match("?",              0))  CSerial.printf("ArduinoPlanck command parser.\n");
+   if (Command.Match("?",              0)) CSerial.printf("ArduinoPlanck command parser.\n");
 
-//   // setup
-   if (Command.Match("speed",          1))  SpeedSp    = Param[0];
+   // Drive commands
+   if (Command.Match("drivepwm",       2)) Driver.Pwm(Param[0], Param[1]);
+   if (Command.Match("drivelr",        2)) Driver.SpeedLR(Param[0], Param[1]);
+   if (Command.Match("drivesh",        2)) Driver.SpeedHeading(Param[0], Param[1]);
+   if (Command.Match("drivexy",        4)) Driver.XY(Param[0], Param[1], Param[2], Param[3]);
+   if (Command.Match("driverotate",    1)) Driver.Rotate(Param[0]);
+   if (Command.Match("drivearc",       4)) Driver.Arc(Param[0], Param[1], Param[2], Param[3]);
+   if (Command.Match("drivestop",      0)) Driver.Stop();
+
 //   if (Command.Match("slope",          1))  SpeedSlope = Param[0];
 //
 //   // basic operation
