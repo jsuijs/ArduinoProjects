@@ -21,6 +21,7 @@ int SharpLinks, SharpRechts;    // sharp meting - afstand in mm
 void ProgrammaTakt()
 {
    static int State, PrevState = -1;
+   bool NewState = false;
 
    int ch = PfKeyGet();
    if (ch) {
@@ -29,6 +30,7 @@ void ProgrammaTakt()
       CSerial.printf("Key: %d\n", ch);
       if (ch == -1) {
          State = 0;           // reset, stop lopend programma / programma 'stilstaan'.
+         NewState = true;     // ook re-trigger als state al 0 is
       } else {
          if (State == 0) {    // andere pfkeys werken alleen als we stil staan
             State = ch;
@@ -37,7 +39,6 @@ void ProgrammaTakt()
    }
 
    // rapporteer status bij state overgang
-   bool NewState = false;
    if (PrevState != State) {
       PrevState = State;
       CSerial.printf("Programma: %d\n", State);
@@ -47,7 +48,9 @@ void ProgrammaTakt()
    // Roep actieve programma 1 t/m 12  aan.
    switch(State) {
       case 0 : { // Programma: stil staan
-         Driver.Pwm(0,0);
+         if (NewState) {
+            Driver.Pwm(0, 0); // only on entry, so CLI-commands can be used in this state.
+         }
          break;
       }
 

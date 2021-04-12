@@ -2,7 +2,6 @@
 #ifndef MYROBOT_H
 #define MYROBOT_H
 
-
 //-----------------------------------------------------------------------------
 // Position.cpp
 //-----------------------------------------------------------------------------
@@ -151,6 +150,8 @@ bool DetectBlikTakt(bool Init);
 
 // RcDispatch.cpp
 void RcDispatch(int &RcData);
-int PfKeyGet();
+int  PfKeyGet();
+void PfKeySet(int InKey);
+
 
 #endif

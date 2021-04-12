@@ -160,8 +160,7 @@ void BlinkTakt()
 // via de serial port.
 //-----------------------------------------------------------------------------
 void Execute(int Param[])
-{  int SpeedSp;
-
+{
    if (Command.Match("?",              0)) CSerial.printf("ArduinoPlanck command parser.\n");
 
    // Drive commands
@@ -173,20 +172,8 @@ void Execute(int Param[])
    if (Command.Match("drivearc",       4)) Driver.Arc(Param[0], Param[1], Param[2], Param[3]);
    if (Command.Match("drivestop",      0)) Driver.Stop();
 
-//   if (Command.Match("slope",          1))  SpeedSlope = Param[0];
-//
-//   // basic operation
-//   if (Command.Match("start",          0))  { DriveState = 1;   printf("Run Start\n");     }
-//   if (Command.Match("reset",          0))  { SolverReset();    printf("Solver reset\n");  }
-//   if (Command.Match("stop",           0))  { DriveState = 0;   printf("Run Stop\n");      }
-//
-//   // c - calibrate moves
-//   if (Command.Match("c360",           0))  { DriveState = 900; printf("Turn 360\n");      }
-//
-//   // debug & (hw) diagnostic
-//   if (Command.Match("dset",           1))  DebugSet(Param[0]);
-//   if (Command.Match("dclr",           1))  DebugClear(Param[0]);
-//   if (Command.Match("line",           0))  LineSensor(true);
-//   if (Command.Match("line2",          1))  printf("linesensor %d, value: %d\n", Param[0], Robot.LineSensorRead(Param[0]));
-//   if (Command.Match("motors",         2))  Robot.Motors(Param[0], Param[1]);
+   if (Command.Match("lppstatus",      0)) { Lpp.ReadStatus(); Lpp.PrintStatus(); }
+
+   if (Command.Match("pfkey",          1)) PfKeySet(Param[0]);
+
 }
