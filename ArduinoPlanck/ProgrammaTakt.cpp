@@ -3,26 +3,27 @@
 //-----------------------------------------------------------------------------
 #include "MyRobot.h"
 
+
 // prototypes (i.v.m. include uit ander project)
 bool Rijden1Takt(bool Init);
 bool UmbMark1(bool Init);
 bool TTijdTakt(bool Init);
 bool HeenEnWeerTakt(bool Init);
 bool UmbMark1Takt(bool Init);
-bool RandomRijdenTakt(bool Init);
+bool RandomRijdenTakt(TState &S);
 // Global vars
 int ProgrammaParam1;
 
 int SharpLinks, SharpRechts;    // sharp meting - afstand in mm
+
+TState GlobS;
 
 //-----------------------------------------------------------------------------
 // ProgrammaTakt - programma-keuze & aanroep van het programma
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 void ProgrammaTakt()
-{
-   static int Program, PrevProgram = -1;
-   bool NewProgram = false;
+{  static TState Program;
 
    int ch = PfKeyGet();
    if (ch) {
@@ -30,67 +31,53 @@ void ProgrammaTakt()
 
       CSerial.printf("Key: %d\n", ch);
       if (ch == -1) {
-         Program = 0;           // reset, stop lopend programma / programma 'stilstaan'.
-         NewProgram = true;     // ook re-trigger als state al 0 is
+         Program.Reset();     // reset, stop lopend programma / programma 'stilstaan'.
       } else {
-         if (Program == 0) {    // andere pfkeys werken alleen als we stil staan
-            Program = ch;
+         if (Program.State == 0) {    // andere pfkeys werken alleen als we stil staan
+            Program.State = ch;
          }
       }
    }
 
-   // rapporteer status bij state overgang
-   if (PrevProgram != Program) {
-      PrevProgram = Program;
-      CSerial.printf("Programma: %d\n", Program);
-      NewProgram = true;
-   }
+   Program.Takt("Programma");
+   if (Program.NewState) GlobS.Reset();
 
    // Roep actieve programma 1 t/m 12  aan.
-   switch(Program) {
+   switch(Program.State) {
 
       case 0 : { // Programma: stil staan
-         if (NewProgram) {
+         if (Program.NewState) {
             Driver.Pwm(0, 0); // only on entry, so CLI-commands can be used in this state.
          }
       }
       break;
 
       case 1 : { // Programma: rijden1
-         if (Rijden1Takt(NewProgram)) {
-            Program = 0;
-         }
+         if (Rijden1Takt(Program.NewState)) Program.State = 0;
       }
       break;
 
-      case 2 : { // Programma: max_pwm
-         Driver.Pwm(155, 155);
+      case 2 : {  // Programma:
       }
       break;
 
-      case 3 : { // Programma: speed
-         Driver.SpeedLR(300, 300);
+      case 3 : {  // Programma:
       }
       break;
 
-      case 4 : { // Programma: speed
-         Driver.SpeedLR(50, -50);
+      case 4 : { // Programma:
       }
       break;
 
       case 5 : { // Programma: UmbMark CCW
-         ProgrammaParam1 = 1;             // set CCW
-         if (UmbMark1Takt(NewProgram)) {    // call StateMachine
-            Program = 0;                    // Statemachine returns true => program done.
-         }
+         ProgrammaParam1 = 1;                // set CCW
+         if (UmbMark1Takt(Program.NewState)) Program.State = 0;
       }
       break;
 
       case 6 : { // Programma: UmbMark CW
-         ProgrammaParam1 = -1;            // set CW
-         if (UmbMark1Takt(NewProgram)) {    // call StateMachine
-            Program = 0;                    // Statemachine returns true => program done.
-         }
+         ProgrammaParam1 = -1;               // set CW
+         if (UmbMark1Takt(Program.NewState)) Program.State = 0;
       }
       break;
 
@@ -99,46 +86,37 @@ void ProgrammaTakt()
       break;
 
       case 8 : { // Programma: UmbMark CW
-         if (DetectBlikTakt(NewProgram)) {  // call StateMachine
-            Program = 0;                    // Statemachine returns true => program done.
-         }
+         if (DetectBlikTakt(Program.NewState)) Program.State = 0;
       }
       break;
 
       case 9 : { // Programma: Heen en Weer
-         if (HeenEnWeerTakt(NewProgram)) {  // call StateMachine
-            Program = 0;                    // Statemachine returns true => program done.
-         }
+         if (HeenEnWeerTakt(Program.NewState)) Program.State = 0;
       }
       break;
 
       case 10 : { // Programma: ttijd
-         if (TTijdTakt(NewProgram)) {       // call StateMachine
-            Program = 0;                    // Statemachine returns true => program done.
-         }
+         if (TTijdTakt(Program.NewState)) Program.State = 0;
       }
       break;
 
       case 11 : { // Programma:
-         if (RandomRijdenTakt(NewProgram)) Program = 0;
+         if (RandomRijdenTakt(GlobS)) Program.State = 0;
       }
       break;
 
       case 12 : { // Programma: test1
          Driver.Rotate(90);
-//         State = 0;
       }
       break;
 
       default : {
          CSerial.printf("ProgrammaTakt: ongeldig programma %d\n", Program);
-         Program = 0;
+         Program.Reset();
       }
       break;
    } // einde van switch
 }
-
-
 
 //-----------------------------------------------------------------------------
 // Rijden1Takt - pwm trapje, print pwm + toerental
@@ -180,8 +158,6 @@ bool Rijden1Takt(bool Init)
 
    return false;  // Nog niet klaar.
 }
-
-
 
 #define UMB_MARK_AFSTAND 800    // mm
 #define UMB_MARK_SPEED 300    // mm/sec
@@ -307,7 +283,10 @@ bool UmbMark1Takt(bool Init)
 }
 
 #define HW_SNELHEID 500
+//-----------------------------------------------------------------------------
 // HeenEnWeer state machine
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 bool HeenEnWeerTakt(bool Init)
 {  static int State, PrevState;
    bool NewState = false;
@@ -393,9 +372,11 @@ bool HeenEnWeerTakt(bool Init)
    return false;  // mission nog niet gereed
 }
 
-
 #define TT_SNELHEID 300
+//-----------------------------------------------------------------------------
 // TTijd state machine
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 bool TTijdTakt(bool Init)
 {  static int State, PrevState;
    bool NewState = false;
@@ -732,7 +713,6 @@ bool DetectBlikTakt(bool Init)
    return false;  // mission nog niet gereed
 }
 
-
 //-----------------------------------------------------------------------------
 // TemplateTakt -
 //-----------------------------------------------------------------------------
@@ -774,77 +754,46 @@ bool DetectBlikTakt(bool Init)
 
 
 int count_l, count_r, AfstBediening;
-int Lidar_LBB;          //Lpp.Array[0]av LD4 70<>90 gr
-int Lidar_LB;          //Lpp.Array[1]
-int Lidar_LLLV;        //Lpp.Array[2]
-int Lidar_LLV;         //Lpp.Array[3]
-int Lidar_LV;          //Lpp.Array[4]
-int Lidar_V;           //Lpp.Array[5]
-int Lidar_RV;          //Lpp.Array[6]
-int Lidar_RRV;         //Lpp.Array[7]
-int Lidar_RRRV;        //Lpp.Array[8]
-int Lidar_RB;          //Lpp.Array[9]
-int Lidar_RBB;          //Lpp.Array[10]av LD4 270<>290 gr
-// ** Extra sensoren AV
-int Lidar_A;            // Lpp.Sensor(0) Achter
-int Lidar_grV;          // Scannen(1) Hoek van 90 graden + 180 gr tot 270 graden
-int Lidar_90V;          // Scannen(2) Korste Afstand van 135 graden + 90 gr tot 225 graden
-// ** LockDown 8-slalom
-int Lidar_Blik_L;       // Scannen(3)Rond Blik Linksom
-int Lidar_Blik_LV;      // Scannen(4)Rond Blik Linksom
-int Lidar_Blik_V;       // Scannen(5)Rond Blik Rechtsom
-int Lidar_Blik_RV;      // Scannen(6)Rond Blik Rechtsom
-int Lidar_Blik_R;       // Scannen(7)Rond Blik Rechtsom
 int Setpunt_r;           // tussenstand encoder rechts
 int Setpunt_l;          // tussenstand encoder links
-int Lid_Max;            // Meetwaarde beperken
 
 //-----------------------------------------------------------------------------
 // RandomRijdenTakt -
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool RandomRijdenTakt(bool Init)
+bool RandomRijdenTakt(TState &S)
 {
-    static int State, PrevState;
-    bool NewState = false;
+   S.Takt("RandomRijden");
 
-    if (Init) {
-       State  = 0;
-       PrevState = -1;
-    }
+//   int Lidar_A = Lpp.Sensor[0].Distance;         // Afstand achterzijde
+//   int Lidar_grV = Lpp.Sensor[1].Degrees32 / 32; // Scannen(1) Hoek van 90 graden + 180 gr tot 270 graden
+//   int Lidar_90V = Lpp.Sensor[2].Distance;       // Scannen(2) Korste Afstand van 135 graden + 90 gr tot 225 graden
+   int Lidar_Blik_L  = Lpp.Sensor[3].Distance;  // Scannen(3) Korste Afstand van 70 graden + 40 gr tot 110 graden
+   int Lidar_Blik_LV = Lpp.Sensor[4].Distance;  // Scannen(4) Korste Afstand van 110 graden + 40 gr tot 150 graden
+   int Lidar_Blik_V  = Lpp.Sensor[5].Distance;  // Scannen(5) Korste Afstand van 150 graden + 60 gr tot 210 graden
+   int Lidar_Blik_RV = Lpp.Sensor[6].Distance;  // Scannen(6) Korste Afstand van 210 graden + 40 gr tot 250 graden
+   int Lidar_Blik_R  = Lpp.Sensor[7].Distance;  // Scannen(7) Korste Afstand van 250 graden + 40 gr tot 290 graden
 
-    if (PrevState != State) {
-       CSerial.printf("RandomRijden state %d -> %d\n", PrevState, State);
-       PrevState = State;
-       NewState  = true;
-    }
-
-    switch (State) {
+   switch (S.State) {
 
       //----------------------------------------------------------------------
       //      *** MaxonRobot - Slalom=8 - Rijden LockDown Challenge !!! 02-09-2020
       //----------------------------------------------------------------------
       case 0 : { // LIDAR-STARTEN 8 - Rijden LockDown Challenge
-         if (NewState) {
+         if (S.NewState) {
             CSerial.printf(" case 500 = START LIDAR.\n");
             Motors(0, 0);
             Lpp.Start();
          }
-         // Condities
-         if ((AfstBediening == 12) || (AfstBediening == 5)) { //av 12 = 0/1 knop of 5 Stoppen
-            AfstBediening = 0;
-            State = 990;
-            Motors(0, 0);
-            CSerial.println("MaxonRobot -5- STOPPEN State = 0 .\n");
-         }
+
          // Start Lidar
          if (AfstBediening == 13) {          // Knop -Mute-
-            State = 501;              // 8-Rijden LockDown Challenge
+            S.State = 501;              // 8-Rijden LockDown Challenge
          }
          if (AfstBediening == 10) {  //10 = Knop <<->> - Random rijden
-            State = 601;              //Random rijden in bak
+            S.State = 601;              //Random rijden in bak
          }
-      } // EINDE CASE-500 Slalom=8 - LIDAR STARTEN Rijden LockDown Challenge
+      }
       break;
 
       //----------------------------------------------------------------------
@@ -852,45 +801,35 @@ bool RandomRijdenTakt(bool Init)
       //----------------------------------------------------------------------
       case 601 : { // Random rijden
 
-         if (NewState) {
-            CSerial.println(" RANDOM RIJDEN.\n");
-            CSerial.println(" case 601.\n");
+         if (S.NewState) {
+            count_l = 0 , count_r = 0;
          }
 
-         // Condities
-         if ((AfstBediening == 12) || (AfstBediening == 5)) { //av Stoppen
-            AfstBediening = 0;
-            State = 990;
-            Motors(0, 0);
-            CSerial.println("MaxonRobot -5- STOPPEN State = 0 .\n");
-         }
+         Setpunt_r = count_r;
+         Setpunt_l = count_l;
 
-         Lid_Max = 500;          // Lidar Meetwaarde beperken
-         //if (Lidar_grV > Lid_Max)   Lidar_grV = Lid_Max;         // 90><180 gr valse meting
-         //if (Lidar_90V > Lid_Max)   Lidar_90V = Lid_Max;         // 135><225 gr valse meting
-         if (Lidar_Blik_L > Lid_Max)  Lidar_Blik_L = Lid_Max;    // 70><110 gr valse meting
-         if (Lidar_Blik_LV > Lid_Max)  Lidar_Blik_LV = Lid_Max;  // 110><150 gr valse meting
-         if (Lidar_Blik_V > Lid_Max)  Lidar_Blik_V = Lid_Max;    // 150><210 gr valse meting
-         if (Lidar_Blik_RV > Lid_Max)  Lidar_Blik_RV = Lid_Max;  // 210><250 gr valse meting
-         if (Lidar_Blik_R > Lid_Max)  Lidar_Blik_R = Lid_Max;    // 250><290 gr valse meting
+         int Lid_Max = 500;          // Lidar Meetwaarde beperken
+         //if (Lidar_grV > Lid_Max)   Lidar_grV = Lid_Max;        // 90><180 gr valse meting
+         //if (Lidar_90V > Lid_Max)   Lidar_90V = Lid_Max;        // 135><225 gr valse meting
+         if (Lidar_Blik_L  > Lid_Max)  Lidar_Blik_L  = Lid_Max;   // 70><110 gr valse meting
+         if (Lidar_Blik_LV > Lid_Max)  Lidar_Blik_LV = Lid_Max;   // 110><150 gr valse meting
+         if (Lidar_Blik_V  > Lid_Max)  Lidar_Blik_V  = Lid_Max;   // 150><210 gr valse meting
+         if (Lidar_Blik_RV > Lid_Max)  Lidar_Blik_RV = Lid_Max;   // 210><250 gr valse meting
+         if (Lidar_Blik_R  > Lid_Max)  Lidar_Blik_R  = Lid_Max;   // 250><290 gr valse meting
 
-         if (  Lidar_Blik_V < 200) {
-            Setpunt_r = count_r;
-            Setpunt_l = count_l;
+         if (Lidar_Blik_V < 200) {
             // print a random number from 0 to 6
             int randNumber = random(7);
             CSerial.println(randNumber);
             if ((randNumber == 1) || (randNumber == 3) || (randNumber == 5)) {
-               State = 603;      // 180 gr R/Om draaien
+               S.State = 603;      // 180 gr R/Om draaien
             }
             else {
-               State = 604;      // 180 gr L/Om draaien
+               S.State = 604;      // 180 gr L/Om draaien
             }
          }
          if ((  Lidar_Blik_LV < 200) && (Lidar_Blik_V < 250) && (Lidar_Blik_RV < 200)) {
-            Setpunt_r = count_r;
-            Setpunt_l = count_l;
-            State = 602;      // 180 gr R/Om draaien
+            S.State = 602;      // 180 gr R/Om draaien
          }
          if ((Lidar_Blik_LV < 200) || (Lidar_Blik_RV > Lidar_Blik_LV)) {
             Motors(70, 40);   // Rechts afdraaien
@@ -901,77 +840,46 @@ bool RandomRijdenTakt(bool Init)
             break;
          }
          Motors(60, 63);   // default rechtuit
-      }            // EINDE CASE-601 Random rijden
+      }
       break;
 
       //----------------------------------------------------------------------
       case 602 : { // 180 gr RECHTSOM draaien - Random rijden
 
-         if (NewState) {
-            CSerial.println(" Lidar Discover.\n");
-            CSerial.println(" case 602.\n");
+         if (S.NewState) {
+            Motors(50, -50);
          }
-         // Condities
-         if ((AfstBediening == 12) || (AfstBediening == 5)) { //av Stoppen
-            AfstBediening = 0;
-            State = 990;
-            Motors(0, 0);
-            CSerial.println("MaxonRobot -5- STOPPEN State = 0 .\n");
-         }
-         Motors(50, -50);
+
          if ((count_l >= Setpunt_l + 2276) && (count_r <= Setpunt_r - 2276)) { //1138.97x2 = 180 graden rechtsom draaien
-            Motors(0, 0);
-            count_l = 0 , count_r = 0;
-            State = 601;
+            S.State = 601;
          }
-      }            // EINDE CASE-602 Slalom=8 - Rijden LockDown Challenge
+      }
       break;
 
       //----------------------------------------------------------------------
       case 603 : { // 90 gr RECHTSOM draaien - Random rijden
 
-         if (NewState) {
-            CSerial.println(" Lidar Discover.\n");
-            CSerial.println(" case 603.\n");
+         if (S.NewState) {
+            Motors(50, -50);
          }
-         // Condities
-         if ((AfstBediening == 12) || (AfstBediening == 5)) { //av Stoppen
-            AfstBediening = 0;
-            State = 990;
-            Motors(0, 0);
-            CSerial.println("MaxonRobot -5- STOPPEN State = 0 .\n");
-         }
-         Motors(50, -50);
+
          if ((count_l >= Setpunt_l + 1138) && (count_r <= Setpunt_r - 1138)) { //1138.97 = 90 graden rechtsom draaien
-            Motors(0, 0);
-            count_l = 0 , count_r = 0;
-            State = 601;
+            S.State = 601;
          }
-      }            // EINDE CASE-603 Random rijden
+      }
       break;
 
      //----------------------------------------------------------------------
       case 604 : { // 90 gr LINKSOM draaien - Random rijden
 
-         if (NewState) {
-            CSerial.println(" Lidar Discover.\n");
-            CSerial.println(" case 604.\n");
+         if (S.NewState) {
+            Motors(-50, 50);
          }
 
-         // Condities
-         if ((AfstBediening == 12) || (AfstBediening == 5)) { //av Stoppen
-            AfstBediening = 0;
-            State = 990;
-            Motors(0, 0);
-            CSerial.println("MaxonRobot -5- STOPPEN State = 0 .\n");
-         }
-         Motors(-50, 50);
          if ((count_l >= Setpunt_l - 1138) && (count_r <= Setpunt_r + 1138)) { //1138.97 = 90 graden linksom draaien
-            Motors(0, 0);
-            count_l = 0 , count_r = 0;
-            State = 601;
+            S.State = 601;
          }
-      }            // EINDE CASE-604 Random rijden
+      }
       break;
 
       default : return true;  // error => mission end

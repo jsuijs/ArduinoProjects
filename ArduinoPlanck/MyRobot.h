@@ -51,22 +51,6 @@ class TPosition
       void Update();
 };
 
-// Encoders
-//void EncoderSetup();
-//void EncoderRead (int &LeftDelta, int &RightDelta);
-//void EncoderPrint();
-//void IsrEncoderL();
-//void IsrEncoderR();
-
-void InitStmEncoders();
-void ReadStmEncodersDelta(int &Left, int &Right);
-
-extern volatile int EncoderLTeller, EncoderRTeller;  // aantal flanken
-
-// Motors.cpp
-void SetupMotors();
-void Motors(int PwmL, int PwmR);
-
 extern TPosition Position;
 
 //-----------------------------------------------------------------------------
@@ -75,7 +59,6 @@ extern TPosition Position;
 
 // Constante per bewegingstype (DriveMode) die we ondersteunen.
 enum TDiveMode { UNDEFINED, M_PWM, M_SPEED_LR, M_SPEED_HEADING, M_XY, M_ROTATE, M_ARC, M_STOP };
-
 
 class TDrive
 {
@@ -128,9 +111,60 @@ class TDrive
 extern TDrive Driver;
 
 
+//-----------------------------------------------------------------------------
+class TState
+{
+   public:
+
+      TState() { Reset(); }
+
+      void Takt(const char *Name) {
+         if (PrevState != State) {
+            CSerial.printf("%s state %d -> %d\n", Name, PrevState, State);
+
+            PrevState      = State;
+            NewState       = true;
+            StateStartTime = millis();
+         }
+      }
+
+      void Reset() {
+         State  = 0;
+         PrevState = -1;
+      }
+
+      int StateTime() {
+         return millis() - StateStartTime;
+      }
+
+      int  State;
+      bool NewState;
+
+   private:
+      int PrevState;
+      int StateStartTime;
+};
+
+
+// Encoders
+//void EncoderSetup();
+//void EncoderRead (int &LeftDelta, int &RightDelta);
+//void EncoderPrint();
+//void IsrEncoderL();
+//void IsrEncoderR();
+
+void InitStmEncoders();
+void ReadStmEncodersDelta(int &Left, int &Right);
+
+extern volatile int EncoderLTeller, EncoderRTeller;  // aantal flanken
+
 // Motors.cpp
-void MotorsSetup_A4950();
-void Motors_A4950(int PwmL, int PwmR);
+void SetupMotors();
+void Motors(int PwmL, int PwmR);
+
+// Motors.cpp
+//void MotorsSetup_A4950();
+//void Motors_A4950(int PwmL, int PwmR);
 
 // MotorController.
 void MotorController(int SetpointL, int SetpointR);
