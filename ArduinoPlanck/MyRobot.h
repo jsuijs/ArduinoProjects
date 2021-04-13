@@ -7,6 +7,7 @@
 //-----------------------------------------------------------------------------
 #include "Arduino.h"
 #include "RobotSettings.h"
+#include "Libs/LppMaster.h"
 
 #define TICKS_360_GRADEN (360L * 256 * 256 / ODO_HEADING)
 #define GRAD2RAD(x) ((float)(x) / 57.2957795)

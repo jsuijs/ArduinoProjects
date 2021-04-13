@@ -2,34 +2,27 @@
 // Planck.ino
 //-----------------------------------------------------------------------------
 
-// Robot-specifieke parameters
-#define RC5_CPP
-#include "MyRobot.h"
+#define MAIN
+#include "MyRobot.h" // super-include
+
+// include code
 #include "Libs\Utilities.cpp"
+#include "Libs/Commands.h"    // contains code...
 
-// include Position class & instantieer
-TPosition Position;
-
-// include Drive class & instantieer
-TDrive Driver;
-bool SecondLoggingOn = true;
-
-// Setup command interpreter
 void Execute();   // prototype
-#include "Libs/Commands.h"
-TCommand Command(Execute);
 
-// Setup i2c & Lidar Preprocessor
-#include <Wire.h>
-TwoWire Wire2(PB11, PB10);
-#define LppWire Wire2
+// global instances
+TPosition      Position;
+TDrive         Driver;
+TCommand       Command(Execute);
+TLpp           Lpp;
+HardwareSerial Serial2 (PA3, PA2);
+TwoWire        Wire2(PB11, PB10);
 
-#include "Libs/LppMaster.h"
-TLpp Lpp;
+bool SecondLoggingOn = true;
 
 int Lijn;  // 0..7, 3 bits. 0 = wit, 7 = zwart, 1 = links, 2 = midden, 4 = rechts
 
-HardwareSerial Serial2 (PA3, PA2);
 
 //---------------------------------------------------------------------------------------
 // RC5 stuff start

@@ -32,7 +32,7 @@ class RC5
 
 
 
-#ifdef RC5_CPP
+#ifdef MAIN
 /*
  *  RC5 Arduino Library
  *  Guy Carpenter, Clearwater Software - 2013
@@ -201,9 +201,5 @@ bool RC5::read(unsigned char *toggle, unsigned char *address, unsigned char *com
     }
 }
 
-#endif // RC5_CPP
-
-
-
+#endif // MAIN
 #endif // RC5_h
-

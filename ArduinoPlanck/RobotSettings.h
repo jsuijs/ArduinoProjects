@@ -12,6 +12,12 @@
 //#define BATTERIJ_PIN    A7
 #define BUZZER_PIN      PB5
 
+// Setup i2c for Lidar Preprocessor
+#include <Wire.h>
+extern  TwoWire Wire2;
+#define LppWire Wire2
+
+
 //-----------------------------------------------------------------------------
 // Motor configuration
 //#define USE_A4950

@@ -213,7 +213,7 @@ class TLpp {
 extern TLpp Lpp; // the default one
 
 // --- C++ ---
-
+#ifdef MAIN
 //-----------------------------------------------------------------------------
 // TLpp::TLpp - constructor
 //-----------------------------------------------------------------------------
@@ -664,5 +664,5 @@ void HexDump( const void *Data, unsigned int Length, unsigned int Offset)
       CSerial.printf( "\r\n" ) ;
    }
 }
-
-#endif
+#endif // HEXDUMP_DEFINED
+#endif // MAIN
