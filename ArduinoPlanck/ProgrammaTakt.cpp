@@ -6,17 +6,15 @@
 
 // prototypes (i.v.m. include uit ander project)
 bool Rijden1Takt(bool Init);
-bool UmbMark1(bool Init);
-bool TTijdTakt(bool Init);
-bool HeenEnWeerTakt(bool Init);
-bool UmbMark1Takt(bool Init);
-bool RandomRijdenTakt(TState &S);
-// Global vars
-int ProgrammaParam1;
+bool MissieUmbMark1(TState &S);
+bool MissieTTijd(TState &S);
+bool MissieHeenEnWeer(TState &S);
+bool MissieRandomRijden(TState &S);
+bool MissieDetectBlik(TState &S);
 
 int SharpLinks, SharpRechts;    // sharp meting - afstand in mm
 
-TState GlobS;
+TState GlobS;  // Statemachine voor missie
 
 //-----------------------------------------------------------------------------
 // ProgrammaTakt - programma-keuze & aanroep van het programma
@@ -39,8 +37,8 @@ void ProgrammaTakt()
       }
    }
 
-   Program.Takt("Programma");
-   if (Program.NewState) GlobS.Reset();
+   Program.Update("Programma");
+   if (Program.NewState) GlobS.Reset();   // reset statemachine van missie zelf.
 
    // Roep actieve programma 1 t/m 12  aan.
    switch(Program.State) {
@@ -70,14 +68,14 @@ void ProgrammaTakt()
       break;
 
       case 5 : { // Programma: UmbMark CCW
-         ProgrammaParam1 = 1;                // set CCW
-         if (UmbMark1Takt(Program.NewState)) Program.State = 0;
+         GlobS.Param1 = 1;                // set CCW
+         if (MissieUmbMark1(GlobS)) Program.State = 0;
       }
       break;
 
       case 6 : { // Programma: UmbMark CW
-         ProgrammaParam1 = -1;               // set CW
-         if (UmbMark1Takt(Program.NewState)) Program.State = 0;
+         GlobS.Param1 = -1;               // set CW
+         if (MissieUmbMark1(GlobS)) Program.State = 0;
       }
       break;
 
@@ -86,22 +84,24 @@ void ProgrammaTakt()
       break;
 
       case 8 : { // Programma: UmbMark CW
-         if (DetectBlikTakt(Program.NewState)) Program.State = 0;
+         if (MissieDetectBlik(GlobS)) Program.State = 0;
       }
       break;
 
       case 9 : { // Programma: Heen en Weer
-         if (HeenEnWeerTakt(Program.NewState)) Program.State = 0;
+         GlobS.Param1 = 500;  // speed
+         if (MissieHeenEnWeer(GlobS)) Program.State = 0;
       }
       break;
 
       case 10 : { // Programma: ttijd
-         if (TTijdTakt(Program.NewState)) Program.State = 0;
+         GlobS.Param1 = 300;  // speed
+         if (MissieTTijd(GlobS)) Program.State = 0;
       }
       break;
 
       case 11 : { // Programma:
-         if (RandomRijdenTakt(GlobS)) Program.State = 0;
+         if (MissieRandomRijden(GlobS)) Program.State = 0;
       }
       break;
 
@@ -163,7 +163,7 @@ bool Rijden1Takt(bool Init)
 #define UMB_MARK_SPEED 300    // mm/sec
 
 //-----------------------------------------------------------------------------
-// MSM_UmbMark1 -
+// MissieUmbMark1 -
 //-----------------------------------------------------------------------------
 // Bij UmbMark rijdt de robot een vierkant met de klok mee en een vierkant
 // tegen de klok in. Bij aankomst wordt de verschuiving in X-richting opgemeten
@@ -174,100 +174,89 @@ bool Rijden1Takt(bool Init)
 // var ProgrammaParam1 = 1 (CCW) of -1 (CW)
 //
 //-----------------------------------------------------------------------------
-bool UmbMark1Takt(bool Init)
-{  static int State, PrevState;
-   bool NewState = false;
+bool MissieUmbMark1(TState &S)
+{
+   S.Update("UmbMark1");
 
-   if (Init) {
-      State  = 0;
-      PrevState = -1;
-   }
-
-   if (PrevState != State) {
-      PrevState = State;
-      NewState = true;
-      CSerial.printf("UmbMark1 state %d\n", State);
-   }
-
-   switch (State) {
+   switch (S.State) {
       case 0 :    // Rij naar X, 0
-            if (NewState) {
+            if (S.NewState) {
                Driver.XY(UMB_MARK_AFSTAND, 0, UMB_MARK_SPEED, 0);  // X, Y, Speed, EndSpeed - alles in mm(/sec)
             }
 
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 1 :    // Draai naar +90 of -90, afhankelijk van MissionHandler.ParamGet(0)
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
-               Driver.Rotate(90 * ProgrammaParam1); // Heading (in graden)
+               Driver.Rotate(90 * S.Param1); // Heading (in graden)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 2 :    // Rij naar X, Y of X, -Y, afhankelijk van MissionHandler.ParamGet(0)
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.XY( UMB_MARK_AFSTAND,
-                        UMB_MARK_AFSTAND * ProgrammaParam1,
+                        UMB_MARK_AFSTAND * S.Param1,
                         UMB_MARK_SPEED,
                         0); // X, Y, Speed, EndSpeed - alles in mm(/sec)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 3 :    // Draai naar 180 graden
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Rotate(180); // Heading (in graden)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 4 :    // Rij naar 0, Y of 0, -Y, afhankelijk van MissionHandler.ParamGet(0)
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.XY( 0,
-                        UMB_MARK_AFSTAND * ProgrammaParam1,
+                        UMB_MARK_AFSTAND * S.Param1,
                         UMB_MARK_SPEED,
                         0); // X, Y, Speed, EndSpeed - alles in mm(/sec)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 5 :    // Draai naar -90 of +90, afhankelijk van MissionHandler.ParamGet(0)
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
-               Driver.Rotate(-90 * ProgrammaParam1); // Heading (in graden)
+               Driver.Rotate(-90 * S.Param1); // Heading (in graden)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 6 :    // Rij naar 0, 0
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.XY(0, 0, UMB_MARK_SPEED, 0); // X, Y, Speed, EndSpeed - alles in mm(/sec)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 7 :    // Draai naar 0 graden
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Rotate(0); // Heading (in graden)
             }
@@ -282,301 +271,284 @@ bool UmbMark1Takt(bool Init)
    return false;  // mission nog niet gereed
 }
 
-#define HW_SNELHEID 500
 //-----------------------------------------------------------------------------
-// HeenEnWeer state machine
+// MissieHeenEnWeer - state machine
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool HeenEnWeerTakt(bool Init)
-{  static int State, PrevState;
-   bool NewState = false;
-   int x;
+bool MissieHeenEnWeer(TState &S)
+{  int x;
 
-   if (Init) {
-      State  = 0;
-      PrevState = -1;
-   }
+   S.Update("HW");
 
-   if (PrevState != State) {
-      PrevState = State;
-      NewState = true;
-      CSerial.printf("HW state %d\n", State);
-   }
+   CSerial.printf("hw %d %d %d %d\n", S.State, Driver.SollSpeedL, Driver.SollSpeedR, SharpRechts);
 
-   CSerial.printf("hw %d %d %d %d\n", State, Driver.SollSpeedL, Driver.SollSpeedR, SharpRechts);
+   switch (S.State) {
 
-   switch (State) {
-      case 0 :    // Volg wand naar vak B
-            if (NewState) {
-               Position.Reset();
-            }
-            x = (250 - SharpRechts)/10;  // wand volgen
-            Driver.SpeedHeading(HW_SNELHEID, x);  // Speed, Heading
+      case 0 : {  // Volg wand naar vak B
+         if (S.NewState) {
+            Position.Reset();
+         }
+         x = (250 - SharpRechts)/10;  // wand volgen
+         Driver.SpeedHeading(S.Param1, x);  // Speed, Heading
 
 //            if (UsDistance < 500) { // Als we de wand voor ons zien
 //               State++; // naar volgende state
 //            }
-         break;
+      }
+      break;
 
-      case 1 :    // Stop
-            if (NewState) {
-               // voor het eerst in deze state
-               Driver.Stop();
-            }
-            if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
-            }
-         break;
+      case 1 : {  // Stop
+         if (S.NewState) {
+            // voor het eerst in deze state
+            Driver.Stop();
+         }
+         if (Driver.IsDone()) { // Als de beweging klaar is
+            S.State++; // naar volgende state
+         }
+      }
+      break;
 
-      case 2 :    // Draai
-            if (NewState) {
-               // voor het eerst in deze state
-               Driver.Rotate(90); // Heading (in graden)
-            }
-            if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
-            }
-         break;
+      case 2 : {  // Draai
+         if (S.NewState) {
+            // voor het eerst in deze state
+            Driver.Rotate(90); // Heading (in graden)
+         }
+         if (Driver.IsDone()) { // Als de beweging klaar is
+            S.State++; // naar volgende state
+         }
+      }
+      break;
 
-      case 3 :    // Draai
-            if (NewState) {
-               // voor het eerst in deze state
-               Driver.Rotate(180); // Heading (in graden)
-            }
-            if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
-            }
-         break;
+      case 3 : {  // Draai
+         if (S.NewState) {
+            // voor het eerst in deze state
+            Driver.Rotate(180); // Heading (in graden)
+         }
+         if (Driver.IsDone()) { // Als de beweging klaar is
+            S.State++; // naar volgende state
+         }
+      }
+      break;
 
-      case 4 :    // Terug naar startpunt
-            x = 180 + (SharpLinks - 250)/10;  // wand volgen
-            Driver.SpeedHeading(HW_SNELHEID, x);  // Speed, Heading
+      case 4 : {  // Terug naar startpunt
+         x = 180 + (SharpLinks - 250)/10;  // wand volgen
+         Driver.SpeedHeading(S.Param1, x);  // Speed, Heading
 
 //            if (UsDistance < 500) { // Als we de wand voor ons zien
 //               State++; // naar volgende state
 //            }
-         break;
+      }
+      break;
 
-      case 5 :    // Stop
-            if (NewState) {
-               // voor het eerst in deze state
-               Driver.Stop();
-            }
-            if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
-            }
-         break;
+      case 5 : {  // Stop
+         if (S.NewState) {
+            // voor het eerst in deze state
+            Driver.Stop();
+         }
+         if (Driver.IsDone()) { // Als de beweging klaar is
+            S.State++; // naar volgende state
+         }
+      }
+      break;
 
       default : return true;  // error => mission end
    }
    return false;  // mission nog niet gereed
 }
 
-#define TT_SNELHEID 300
 //-----------------------------------------------------------------------------
-// TTijd state machine
+// MissieTTijd - state machine
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool TTijdTakt(bool Init)
-{  static int State, PrevState;
-   bool NewState = false;
-   int x;
+bool MissieTTijd(TState &S)
+{  int x;
 
-   if (Init) {
-      State  = 0;
-      PrevState = -1;
-   }
+   S.Update("TTijd");
 
-   if (PrevState != State) {
-      PrevState = State;
-      NewState = true;
-      CSerial.printf("TTijd state %d\n", State);
-   }
-
-   switch (State) {
+   switch (S.State) {
       case 0 :    // Volg wand naar vak B
             x = (200 - SharpRechts)/10;  // wand volgen
-            Driver.SpeedHeading(TT_SNELHEID, x);  // Speed, Heading
+            Driver.SpeedHeading(S.Param1, x);  // Speed, Heading
 
             if (SharpLinks < 300) { // Als we de wand voor ons zien
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 1 :    // Stop
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Stop();
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 2 :    // Draai
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Rotate(90); // Heading (in graden)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 3 :    // Volg wand in vak B
             x = (200 - SharpRechts)/10;  // wand volgen
-            Driver.SpeedHeading(TT_SNELHEID, x + 90);  // Speed, Heading
+            Driver.SpeedHeading(S.Param1, x + 90);  // Speed, Heading
             CSerial.printf("SharpRechts: %d\n", SharpRechts);
 
             if (SharpLinks < 300) { // Als we de wand voor ons zien
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 4 :    // Stop
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Stop();
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 5 :    // Draai
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Rotate(180); // Heading (in graden)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 6 :    // Volg wand uit vak B
             x = (200 - SharpRechts)/10;  // wand volgen
-            Driver.SpeedHeading(TT_SNELHEID, x + 180);  // Speed, Heading
+            Driver.SpeedHeading(S.Param1, x + 180);  // Speed, Heading
 
             if (SharpRechts > 400) { // Als we rechts geen wand meer zien
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
 
       case 7 :    // Nog klein stukje rechtdoor
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
-               Driver.XY(Position.XPos-280, Position.YPos, TT_SNELHEID, 0);
+               Driver.XY(Position.XPos-280, Position.YPos, S.Param1, 0);
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 8 :    // draai richting C
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Rotate(90); // Heading (in graden)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 9 :    // Volg wand naar vak C
             x = (200 - SharpRechts)/10;  // wand volgen
             x = Clip(x, -5, 5);
-            Driver.SpeedHeading(TT_SNELHEID, x + 90);  // Speed, Heading
+            Driver.SpeedHeading(S.Param1, x + 90);  // Speed, Heading
             CSerial.printf("Sharp: %d, x: %d\n", SharpRechts, x);
 
             if (SharpLinks < 300) { // Als we de wand voor ons zien
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 10 :    // Stop
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Stop();
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 11 :    // Draai
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Rotate(180); // Heading (in graden)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 12 :    // Volg wand in vak C
             x = (200 - SharpRechts)/10;  // wand volgen
-            Driver.SpeedHeading(TT_SNELHEID, x + 180);  // Speed, Heading
+            Driver.SpeedHeading(S.Param1, x + 180);  // Speed, Heading
 
             if (SharpLinks < 300) { // Als we de wand voor ons zien
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 13 :    // Stop
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Stop();
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 14 :    // Draai
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Rotate(270); // Heading (in graden)
             }
 
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 15 :    // Volg wand uit vak C
             x = (200 - SharpRechts)/10;  // wand volgen
-            Driver.SpeedHeading(TT_SNELHEID, x + 270);  // Speed, Heading
+            Driver.SpeedHeading(S.Param1, x + 270);  // Speed, Heading
 
             if (SharpRechts > 400) { // Als we rechts geen wand meer zien
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 16 :    // Nog een klein stukje rechtdoor
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
-               Driver.XY(Position.XPos, Position.YPos-280, TT_SNELHEID, 0); // Heading (in graden)
+               Driver.XY(Position.XPos, Position.YPos-280, S.Param1, 0); // Heading (in graden)
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 17 :    // Draai
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Rotate(180); // Heading (in graden)
             }
 
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
       case 18 :    // Volg wand naar vak A
             x = (200 - SharpRechts)/10;  // wand volgen
-            Driver.SpeedHeading(TT_SNELHEID, x + 180);  // Speed, Heading
+            Driver.SpeedHeading(S.Param1, x + 180);  // Speed, Heading
 
             if (SharpLinks < 300) { // Als we de wand voor ons zien
                return true; // done
@@ -584,12 +556,12 @@ bool TTijdTakt(bool Init)
          break;
 
       case 19 :    // Stop
-            if (NewState) {
+            if (S.NewState) {
                // voor het eerst in deze state
                Driver.Stop();
             }
             if (Driver.IsDone()) { // Als de beweging klaar is
-               State++; // naar volgende state
+               S.State++; // naar volgende state
             }
          break;
 
@@ -599,31 +571,22 @@ bool TTijdTakt(bool Init)
 }
 
 //-----------------------------------------------------------------------------
-// DetectBlikTakt -
+// MissieDetectBlik -
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool DetectBlikTakt(bool Init)
-{  static int State, PrevState;
-   bool NewState = false;
+bool MissieDetectBlik(TState &S)
+{
    static int Afstanden[90];
    static int Target;
 
    static int StartRobotHoek;
 
-   if (Init) {
-      State  = 0;
-      PrevState = -1;
-   }
 
-   if (PrevState != State) {
-      PrevState = State;
-      NewState = true;
-      CSerial.printf("Template state %d\n", State);
-   }
+   S.Update("DetectBlik");
 
-   switch (State) {
+   switch (S.State) {
       case 0 : {    // draai naar rechts
-         if (NewState) {
+         if (S.NewState) {
             StartRobotHoek = Position.Hoek;
             Driver.SpeedLR(100, -100);
          }
@@ -631,12 +594,12 @@ bool DetectBlikTakt(bool Init)
 //         if (Driver.IsDone()) { // Als de beweging klaar is
 //            State++; // naar volgende state
 //         }
-         if (Position.Hoek - StartRobotHoek < -45 ) State ++;
+         if (Position.Hoek - StartRobotHoek < -45 ) S.State ++;
       }
       break;
 
       case 1 :  {  // scan naar links
-         if (NewState) {
+         if (S.NewState) {
             Driver.SpeedLR(-50, 50);
             for (int x=0; x< 90; x++) Afstanden[x] = 999;
          }
@@ -645,12 +608,12 @@ bool DetectBlikTakt(bool Init)
 //             Afstanden[Ix] = UsDistance;
          }
 //         CSerial.printf("aaHoek: %d, Sonar: %d\n", Position.Hoek, UsDistance);
-         if (Position.Hoek - StartRobotHoek > 45 ) State ++;
+         if (Position.Hoek - StartRobotHoek > 45 ) S.State ++;
       }
       break;
 
       case 2 : {   // draai naar blik
-         if (NewState) {
+         if (S.NewState) {
             int Min = Afstanden[0];
             int First = 999, Last = 999;
 
@@ -670,12 +633,12 @@ bool DetectBlikTakt(bool Init)
             Driver.SpeedLR(100, -100);
          }
 
-         if (Position.Hoek - StartRobotHoek < Target ) State ++;
+         if (Position.Hoek - StartRobotHoek < Target ) S.State ++;
       }
       break;
 
       case 3 : {    // rij naar blik
-         if (NewState) {
+         if (S.NewState) {
             Driver.SpeedHeading(200, Target + StartRobotHoek);
 //            GrijperMagneetVast(true);
          }
@@ -687,15 +650,13 @@ bool DetectBlikTakt(bool Init)
       }
          break;
 
-
-
       case 4 : {    // rij terug
          static int EndValue;
 
          int OdoL, OdoR, OdoT;
          Position.OdoGet(OdoL, OdoR, OdoT) ;
 
-         if (NewState) {
+         if (S.NewState) {
             Driver.SpeedHeading(-200, Target + StartRobotHoek);
              EndValue = OdoT + 500;
 
@@ -703,7 +664,7 @@ bool DetectBlikTakt(bool Init)
          CSerial.printf("OdoT: %d\n", OdoT);
          if ((OdoT - EndValue) > 0) {
 //              GrijperMagneetVast(false);
-           State ++;
+           S.State ++;
          }
       }
       break;
@@ -713,57 +674,17 @@ bool DetectBlikTakt(bool Init)
    return false;  // mission nog niet gereed
 }
 
-//-----------------------------------------------------------------------------
-// TemplateTakt -
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-//bool TemplateTakt(bool Init)
-//{
-//    static int State, PrevState;
-//    bool NewState = false;
-//
-//    if (Init) {
-//       State  = 0;
-//       PrevState = -1;
-//    }
-//
-//    if (PrevState != State) {
-//       PrevState = State;
-//       NewState = true;
-//       CSerial.printf("Template state %d\n", State);
-//    }
-//
-//    switch (State) {
-//       case 0 : {  //
-//          if (NewState) {
-//             Driver.XY(UMB_MARK_AFSTAND, 0, UMB_MARK_SPEED, 0);  // X, Y, Speed, EndSpeed - alles in mm(/sec)
-//          }
-//
-//          if (Driver.IsDone()) { // Als de beweging klaar is
-//             State++; // naar volgende state
-//          }
-//       }
-//       break;
-//
-//       default : return true;  // error => mission end
-//    }
-//    return false;  // mission nog niet gereed
-//}
-
-
-
-
 int count_l, count_r, AfstBediening;
-int Setpunt_r;           // tussenstand encoder rechts
-int Setpunt_l;          // tussenstand encoder links
+int Setpunt_r;    // tussenstand encoder rechts
+int Setpunt_l;    // tussenstand encoder links
 
 //-----------------------------------------------------------------------------
 // RandomRijdenTakt -
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool RandomRijdenTakt(TState &S)
+bool MissieRandomRijden(TState &S)
 {
-   S.Takt("RandomRijden");
+   S.Update("RandomRijden");
 
 //   int Lidar_A = Lpp.Sensor[0].Distance;         // Afstand achterzijde
 //   int Lidar_grV = Lpp.Sensor[1].Degrees32 / 32; // Scannen(1) Hoek van 90 graden + 180 gr tot 270 graden
@@ -886,3 +807,28 @@ bool RandomRijdenTakt(TState &S)
    }
    return false;  // mission nog niet gereed
 }
+
+////-----------------------------------------------------------------------------
+//// MissieTemplate -
+////-----------------------------------------------------------------------------
+////-----------------------------------------------------------------------------
+//bool MissieTemplate(TState &S)
+//{
+//   S.Update("Template");
+//
+//   switch (S.State) {
+//      case 0 : {  //
+//         if (S.NewState) {
+//            Driver.XY(S.Param1, 0, S.Param1, 0);  // X, Y, Speed, EndSpeed - alles in mm(/sec)
+//         }
+//
+//         if (Driver.IsDone()) { // Als de beweging klaar is
+//            S.State++; // naar volgende state
+//         }
+//      }
+//      break;
+//
+//      default : return true;  // error => mission end
+//   }
+//   return false;  // mission nog niet gereed
+//}

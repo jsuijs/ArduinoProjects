@@ -118,9 +118,9 @@ class TState
 
       TState() { Reset(); }
 
-      void Takt(const char *Name) {
+      void Update(const char *InName) {
          if (PrevState != State) {
-            CSerial.printf("%s state %d -> %d\n", Name, PrevState, State);
+            CSerial.printf("%s state %d -> %d\n", InName, PrevState, State);
 
             PrevState      = State;
             NewState       = true;
@@ -139,6 +139,8 @@ class TState
 
       int  State;
       bool NewState;
+
+      int  Param1;   // user param
 
    private:
       int PrevState;
@@ -181,12 +183,10 @@ extern bool SecondLoggingOn;
 
 // ProgrammaTakt.cpp
 void ProgrammaTakt();
-bool DetectBlikTakt(bool Init);
 
 // RcDispatch.cpp
 void RcDispatch(int &RcData);
 int  PfKeyGet();
 void PfKeySet(int InKey);
-
 
 #endif
