@@ -49,8 +49,7 @@ void Rc5Isr()
 void setup() {
    // start serial
    CSerial.begin(115200);
-//   Serial.println("Starten....\n");
-   CSerial.printf("Starten 3\n");
+   CSerial.printf("Starten\n");
 
    Position.init();  // delayed constructor
    Driver.init();    // delayed constructor
@@ -61,7 +60,8 @@ void setup() {
    pinMode(PB1, OUTPUT);    //Led op Maple-Mini
 
    // Link PinChange interrupt to RC5 reader.
-   attachInterrupt(PB4, Rc5Isr, CHANGE);
+   attachInterrupt(IR_PIN, Rc5Isr, CHANGE);
+
 
    LppWire.begin();
    if (Lpp.begin()) {

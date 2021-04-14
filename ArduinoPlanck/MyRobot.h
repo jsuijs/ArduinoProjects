@@ -119,6 +119,7 @@ class TState
       TState() { Reset(); }
 
       void Update(const char *InName) {
+         NewState = false;
          if (PrevState != State) {
             CSerial.printf("%s state %d -> %d\n", InName, PrevState, State);
 
