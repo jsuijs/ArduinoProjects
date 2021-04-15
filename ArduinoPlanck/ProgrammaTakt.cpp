@@ -3,8 +3,7 @@
 //-----------------------------------------------------------------------------
 #include "MyRobot.h"
 
-
-// prototypes (i.v.m. include uit ander project)
+// prototypes
 bool Rijden1Takt(bool Init);
 bool MissieUmbMark1(TState &S);
 bool MissieTTijd(TState &S);
@@ -703,16 +702,11 @@ bool MissieRandomRijden(TState &S)
       //----------------------------------------------------------------------
       case 0 : { // LIDAR-STARTEN 8 - Rijden LockDown Challenge
          if (S.NewState) {
-            CSerial.printf(" case 500 = START LIDAR.\n");
             Motors(0, 0);
             Lpp.Start();
          }
 
-         // Start Lidar
-         if (AfstBediening == 13) {          // Knop -Mute-
-            S.State = 501;              // 8-Rijden LockDown Challenge
-         }
-         if (AfstBediening == 10) {  //10 = Knop <<->> - Random rijden
+         if (S.StateTime() > 2000) {   //Wacht op start lidar
             S.State = 601;              //Random rijden in bak
          }
       }
