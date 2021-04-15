@@ -222,6 +222,26 @@ void TDrive::Rotate(int Heading)
    }
 
 //-----------------------------------------------------------------------------
+// Rotate - draai naar absolute heading (graden).
+//-----------------------------------------------------------------------------
+// Draai de stilstaande robot naar opgegeven richting.
+// - 'Degrees' is het aantal graden, positief = tegen de klok in. Waarde mag
+//    groter zijn dan +/- 360 graden, de robot draait dan meer dan een hele ronde.
+//
+// Gebruikte constantes: ROTATE_P_GAIN, ROTATE_D_GAIN, ROTATE_CLIP
+//-----------------------------------------------------------------------------
+void TDrive::RotateRel(int Degrees)
+   {
+      CSerial.printf("Drive.RotateRel\n");
+
+      DriveMode = M_ROTATE;
+      Param1 = Degrees; // Aantal te draaien graden (relatief).
+
+      NewMovement = true;
+      IsDoneFlag = false;
+   }
+
+//-----------------------------------------------------------------------------
 // Stop - breng de robot tot stilstand.
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -300,7 +320,7 @@ bool TDrive::RotateTakt(bool FirstCall, int InDegrees)
 
       if (FirstCall) {
          StilStand         = 0;
-         ResterendHoek_q8  = InDegrees * 255;
+         ResterendHoek_q8  = InDegrees * 256;
          VorigeHoek_q8     = Position.HoekHires();
       }
 

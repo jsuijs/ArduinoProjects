@@ -76,6 +76,7 @@ class TDrive
       void SpeedHeading(int Speed, int Heading);
       void XY(int X, int Y, int Speed, int EndSpeed);
       void Rotate(int Heading);
+      void RotateRel(int Degrees);
       void Arc(int Heading, int Radius, int Speed, int EndSpeed);
       void Stop();
 

@@ -157,21 +157,22 @@ void BlinkTakt()
 //-----------------------------------------------------------------------------
 void Execute(int Param[])
 {
-   if (Command.Match("?",              0)) CSerial.printf("ArduinoPlanck command parser.\n");
+   if (Command.Match("?",              0)) Command.Help("ArduinoPlanck command parser.");
 
    // Drive commands
-   if (Command.Match("drivepwm",       2)) Driver.Pwm(Param[0], Param[1]);
-   if (Command.Match("drivelr",        2)) Driver.SpeedLR(Param[0], Param[1]);
-   if (Command.Match("drivesh",        2)) Driver.SpeedHeading(Param[0], Param[1]);
-   if (Command.Match("drivexy",        4)) Driver.XY(Param[0], Param[1], Param[2], Param[3]);
-   if (Command.Match("driverotate",    1)) Driver.Rotate(Param[0]);
-   if (Command.Match("drivearc",       4)) Driver.Arc(Param[0], Param[1], Param[2], Param[3]);
-   if (Command.Match("drivestop",      0)) Driver.Stop();
+   if (Command.Match("DrivePwm",       2)) Driver.Pwm(Param[0], Param[1]);
+   if (Command.Match("DriveLR",        2)) Driver.SpeedLR(Param[0], Param[1]);
+   if (Command.Match("DriveSH",        2)) Driver.SpeedHeading(Param[0], Param[1]);
+   if (Command.Match("DriveXY",        4)) Driver.XY(Param[0], Param[1], Param[2], Param[3]);
+   if (Command.Match("DriveRotate",    1)) Driver.Rotate(Param[0]);
+   if (Command.Match("DriveRotateRel", 1)) Driver.RotateRel(Param[0]);
+   if (Command.Match("DriveArc",       4)) Driver.Arc(Param[0], Param[1], Param[2], Param[3]);
+   if (Command.Match("DdriveStop",      0)) Driver.Stop();
 
-   if (Command.Match("lppstatus",      0)) { Lpp.ReadStatus(); Lpp.PrintStatus(); }
-   if (Command.Match("lppstart",       0)) Lpp.Start();
-   if (Command.Match("lppstop",        0)) Lpp.Stop();
+   if (Command.Match("LppStatus",      0)) { Lpp.ReadStatus(); Lpp.PrintStatus(); }
+   if (Command.Match("LppStart",       0)) Lpp.Start();
+   if (Command.Match("LppStop",        0)) Lpp.Stop();
 
-   if (Command.Match("pfkey",          1)) PfKeySet(Param[0]);
-   if (Command.Match("position",       0)) Position.Print();
+   if (Command.Match("PfKey",          1)) PfKeySet(Param[0]);
+   if (Command.Match("Position",       0)) Position.Print();
 }

@@ -42,6 +42,7 @@ public:
    void Clear()  { State = 0 ; }  // Clear - Signal we want to restart
    int  GetLine(int Value);
    char Execute(int Verbose = 2);
+   void Help(const char *Str);
 
 private:
    bool AddParam( int Value );
@@ -61,6 +62,8 @@ private:
    bool Negative  ;
 
    int  LastError ; // for Execute &() MatchCommand() only
+
+   bool HelpFlag  ;
 };
 
 //-----------------------------------------------------------------------------
@@ -267,15 +270,32 @@ int TCommand::GetLine(int Value)
    }
 
 //-----------------------------------------------------------------------------
+// TCommand::Help - Print available commands
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+void TCommand::Help(const char *Str)
+   {
+      CSerial.println(Str);
+      HelpFlag = true;
+      (*Executor)(Param);
+      HelpFlag = false;
+   }
+
+//-----------------------------------------------------------------------------
 // TCommand::Match - Used by external executor function to test for commands.
 //-----------------------------------------------------------------------------
 // returns true on command & param-count match
 //-----------------------------------------------------------------------------
 bool TCommand::Match(const char *Keyword, byte NrParams)
    {
+      if (HelpFlag) {
+         CSerial.printf("(%d) %s\n", NrParams, Keyword);
+         return false;
+      }
+
       //printf("Match Cmd: '%s' Keyword: '%s', NrParams: %d\n", Cmd, Keyword, NrParams);
       if (LastError == 0)         return false;  // this command is already executed.
-      if (strcmp(Cmd, Keyword))   return false;  // not this command.
+      if (strcasecmp(Cmd, Keyword))   return false;  // not this command.
       LastError = 1;  // command recognised, but (maybe) incorrect nr of params
       if (ParamCount != NrParams) return false;  // incorrect nr of params
       LastError = 0;  // success
