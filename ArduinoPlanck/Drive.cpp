@@ -84,7 +84,7 @@ void TDrive::Takt()
          PrevIsDone = false;
       }
 
-      //      printf("Drive.Takt %d %d %d\n", DriveMode, Param1, Param2);
+      //CSerial.printf("Drive.Takt %d %d %d\n", DriveMode, Param1, Param2);
       switch(DriveMode) {
          case M_PWM : {
             Motors(Param1, Param2);
@@ -203,7 +203,7 @@ void TDrive::XY(int X, int Y, int Speed, int EndSpeed)
    }
 
 //-----------------------------------------------------------------------------
-// Rotate - draai naar heading (graden).
+// Rotate - draai naar absolute heading (graden).
 //-----------------------------------------------------------------------------
 // Draai de stilstaande robot naar opgegeven richting.
 // - 'Heading' is de absolute hoek, in graden.
@@ -215,7 +215,7 @@ void TDrive::Rotate(int Heading)
       CSerial.printf("Drive.Rotate\n");
 
       DriveMode = M_ROTATE;
-      Param1 = Heading;
+      Param1 = NormHoek(Position.Hoek + Heading, 360); // Aantal te draaien graden (relatief).
 
       NewMovement = true;
       IsDoneFlag = false;
@@ -289,37 +289,47 @@ void TDrive::UpdateSpeedSP(int InSpeedL, int InSpeedR, int MaxSlopeP)
 //-----------------------------------------------------------------------------
 // RotateTakt -
 //-----------------------------------------------------------------------------
-// Parameter: InHeading - gewenste orientatie in graden.
+// Parameter: InDegrees - gewenste aantal graden draaien
 // return: true when done
 //-----------------------------------------------------------------------------
-bool TDrive::RotateTakt(bool FirstCall, int InHeading)
-   {  static int PrevHoekError;
+bool TDrive::RotateTakt(bool FirstCall, int InDegrees)
+   {  static int PrevResterendHoek_q8;
+      static int ResterendHoek_q8;
+      static int VorigeHoek_q8;
       static char StilStand;
 
       if (FirstCall) {
-         StilStand = 0;
+         StilStand         = 0;
+         ResterendHoek_q8  = InDegrees * 255;
+         VorigeHoek_q8     = Position.HoekHires();
       }
 
-      long CurrentHoek = Position.HoekHires();
-      long HoekError = NormHoek(CurrentHoek - (InHeading * 256L), (360 * 256L)); // in graden *256
+      int DezeHoek_q8   = Position.HoekHires();
+      int Delta_q8      = NormHoek(DezeHoek_q8 - VorigeHoek_q8, (360*256));
+      VorigeHoek_q8     = DezeHoek_q8;
 
-      if (ABS(HoekError) < 256) {
-         // kleine fout => niet corrigeren
+      // Update remainingAngle
+
+      if (ABSOLUTE(ResterendHoek_q8) > ABSOLUTE(Delta_q8)) {
+         ResterendHoek_q8 -= Delta_q8;
+      } else {
+         ResterendHoek_q8 = 0;
+         SpeedLRTakt(FirstCall, 0, 0, MAX_SLOPE);
          return true;   // done
       }
 
-      long ClippedHoekError = Clip(HoekError, ROTATE_CLIP, -ROTATE_CLIP);
+      int Clipped_q8 = Clip(ResterendHoek_q8, ROTATE_CLIP_Q8, -ROTATE_CLIP_Q8);
       if (FirstCall) {
-         PrevHoekError = HoekError;
+         PrevResterendHoek_q8 = ResterendHoek_q8;
       }
 
-      int SpeedL = (float) ClippedHoekError * ROTATE_P_GAIN + (HoekError - PrevHoekError) * ROTATE_D_GAIN;
+      int SpeedL = Clipped_q8 * (float) ROTATE_P_GAIN + (ResterendHoek_q8 - PrevResterendHoek_q8) * (float) ROTATE_D_GAIN;
       int SpeedR = -SpeedL;
 
 //      CSerial.printf("RotateTakt FirstCall: %d InHeading: %d CurHoek: %ld, HoekError: %ld, SpeedL: %d, PrevHoekError: %d\n",
 //            FirstCall, InHeading, CurrentHoek/256, HoekError/256, SpeedL, PrevHoekError/256);
 
-      if (ABS(HoekError) > ABS(ClippedHoekError)) {
+      if (ABS(ResterendHoek_q8) > ABS(Clipped_q8)) {
          // clipped
          SpeedLRTakt(FirstCall, SpeedL, SpeedR, MAX_SLOPE);
          //      CSerial.printf("***\n");
@@ -329,7 +339,7 @@ bool TDrive::RotateTakt(bool FirstCall, int InHeading)
          //      CSerial.printf("###\n");
       }
 
-      if (HoekError == PrevHoekError) {
+      if (ResterendHoek_q8 == PrevResterendHoek_q8) {
          // stilstand
          StilStand ++;
          if (StilStand > 10) return true; // klaar als we 10 ticks niet bewogen hebben.
@@ -337,7 +347,7 @@ bool TDrive::RotateTakt(bool FirstCall, int InHeading)
          StilStand = 0;
       }
 
-      PrevHoekError = HoekError;
+      PrevResterendHoek_q8 = ResterendHoek_q8;
       return false; // not done yet
    }
 

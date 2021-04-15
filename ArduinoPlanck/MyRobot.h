@@ -12,6 +12,9 @@
 #define TICKS_360_GRADEN (360L * 256 * 256 / ODO_HEADING)
 #define GRAD2RAD(x) ((float)(x) / 57.2957795)
 
+template <typename T> inline
+T ABSOLUTE(const T& v) { return v < 0 ? -v : v; }
+
 class TPosition
 {
    public:
@@ -29,11 +32,9 @@ class TPosition
       int  YPos;
       int  Hoek;  // in graden
 
-      long HoekHires();
+      long HoekHires() { return VarRobotHoek; }
 
    private:
-
-      // private vars
 
       // de robot positie.
       long int VarRobotXPos;    // in 1/1024 mm (ca 1 um)
@@ -78,12 +79,10 @@ class TDrive
       void Arc(int Heading, int Radius, int Speed, int EndSpeed);
       void Stop();
 
-
       int SollSpeedL, SollSpeedR; // Snelheid (in mm/sec) die we nastreven, verandering begrensd door MaxSlope
 
    private:
 
-      // private vars
       TDiveMode DriveMode;    // actief type aansturing
       int Param1;             // Paramers van actieve aansturing type
       int Param2;
@@ -95,8 +94,6 @@ class TDrive
 
       int MaxSlope;
 
-
-      // private methods
       void UpdateSpeedSP(int InSpeedL, int InSpeedR, int MaxSlopeP);
 
       void SpeedLRTakt(bool FirstCall, int SpeedL, int SpeedR, int MaxSlopeP);
@@ -105,11 +102,9 @@ class TDrive
       bool RotateTakt(bool FirstCall, int InHeading);
       bool ArcTakt(bool FirstCall, int Heading, int Radius, int Speed, int EndSpeed);
       bool StopTakt(bool FirstCall);
-
 };
 
 extern TDrive Driver;
-
 
 //-----------------------------------------------------------------------------
 class TState

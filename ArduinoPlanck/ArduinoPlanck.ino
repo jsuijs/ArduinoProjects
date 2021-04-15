@@ -23,7 +23,6 @@ bool SecondLoggingOn = true;
 
 int Lijn;  // 0..7, 3 bits. 0 = wit, 7 = zwart, 1 = links, 2 = midden, 4 = rechts
 
-
 //---------------------------------------------------------------------------------------
 // RC5 stuff start
 #include "Libs/RC5.h"
@@ -61,7 +60,6 @@ void setup() {
 
    // Link PinChange interrupt to RC5 reader.
    attachInterrupt(IR_PIN, Rc5Isr, CHANGE);
-
 
    LppWire.begin();
    if (Lpp.begin()) {
@@ -108,9 +106,11 @@ void loop() {
    if ((ms - NextMainTakt) > 0) {
       NextMainTakt = ms + MAIN_TAKT_INTERVAL;  // zet tijd voor volgende interval
       // hier de periodieke acties voor deze interval
-      Position.Takt(); // Lees & verwerk encoder data
-      ProgrammaTakt(); // Voer (stapje van) geselecteerde programma uit
-      Driver.Takt();   // stuur motoren aan
+
+      Lpp.ReadSensors();// lees lidar data
+      Position.Takt();  // Lees & verwerk encoder data
+      ProgrammaTakt();  // Voer (stapje van) geselecteerde programma uit
+      Driver.Takt();    // stuur motoren aan
    }
 
    // Seconde interval
@@ -124,7 +124,7 @@ void loop() {
          //
          // CSerial.printf("Encoder L/R TPrev %d/%d TAct: %d/%d, Count: %d/%d\n",
          //       EncoderLPeriode, EncoderRPeriode, EncoderL_LopendePeriode, EncoderR_LopendePeriode, EncoderLTeller, EncoderRTeller);
-         Position.Print();
+         //Position.Print();
          //int Batterij = analogRead(BATTERIJ_PIN);
          //int Spanning = (int) (145L * Batterij / 960);  // 14.8 volt geeft waarde 964
          //CSerial.printf("Batterij: %d (V * 10) (%d)\n", Spanning, Batterij);
@@ -135,7 +135,10 @@ void loop() {
    Command.Takt(CSerial);  // Console command interpreter
 }
 
-
+//-----------------------------------------------------------------------------
+// BlinkTakt -
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 void BlinkTakt()
 {  static int Count;
 
@@ -170,5 +173,5 @@ void Execute(int Param[])
    if (Command.Match("lppstop",        0)) Lpp.Stop();
 
    if (Command.Match("pfkey",          1)) PfKeySet(Param[0]);
-
+   if (Command.Match("position",       0)) Position.Print();
 }

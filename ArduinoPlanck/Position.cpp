@@ -49,13 +49,6 @@ void TPosition::Reset()
       Update();   // update variabelen
    }
 
-
-long TPosition::HoekHires()
-   {
-      return VarRobotHoek;
-   }
-
-
 //-----------------------------------------------------------------------------
 // PrintRobotPositie -
 //-----------------------------------------------------------------------------

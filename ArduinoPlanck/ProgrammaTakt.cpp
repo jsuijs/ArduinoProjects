@@ -702,7 +702,7 @@ bool MissieRandomRijden(TState &S)
       //----------------------------------------------------------------------
       case 0 : { // LIDAR-STARTEN 8 - Rijden LockDown Challenge
          if (S.NewState) {
-            Motors(0, 0);
+            Driver.Pwm(0, 0);
             Lpp.Start();
          }
 
@@ -719,6 +719,7 @@ bool MissieRandomRijden(TState &S)
 
          if (S.NewState) {
             count_l = 0 , count_r = 0;
+            CSerial.print("Newstate 601\n");
          }
 
          Setpunt_r = count_r;
@@ -748,14 +749,14 @@ bool MissieRandomRijden(TState &S)
             S.State = 602;      // 180 gr R/Om draaien
          }
          if ((Lidar_Blik_LV < 200) || (Lidar_Blik_RV > Lidar_Blik_LV)) {
-            Motors(70, 40);   // Rechts afdraaien
+            Driver.Pwm(70, 40);   // Rechts afdraaien
             break;
          }
          if ((Lidar_Blik_RV < 200) || (Lidar_Blik_LV > Lidar_Blik_RV)) {
-            Motors(40, 70);   //Links afdraaien
+            Driver.Pwm(40, 70);   //Links afdraaien
             break;
          }
-         Motors(60, 63);   // default rechtuit
+         Driver.Pwm(60, 63);   // default rechtuit
       }
       break;
 
@@ -763,7 +764,7 @@ bool MissieRandomRijden(TState &S)
       case 602 : { // 180 gr RECHTSOM draaien - Random rijden
 
          if (S.NewState) {
-            Motors(50, -50);
+            Driver.Pwm(50, -50);
          }
 
          if ((count_l >= Setpunt_l + 2276) && (count_r <= Setpunt_r - 2276)) { //1138.97x2 = 180 graden rechtsom draaien
@@ -776,7 +777,7 @@ bool MissieRandomRijden(TState &S)
       case 603 : { // 90 gr RECHTSOM draaien - Random rijden
 
          if (S.NewState) {
-            Motors(50, -50);
+            Driver.Pwm(50, -50);
          }
 
          if ((count_l >= Setpunt_l + 1138) && (count_r <= Setpunt_r - 1138)) { //1138.97 = 90 graden rechtsom draaien
@@ -789,7 +790,8 @@ bool MissieRandomRijden(TState &S)
       case 604 : { // 90 gr LINKSOM draaien - Random rijden
 
          if (S.NewState) {
-            Motors(-50, 50);
+            Driver.Pwm(-50, 50);
+//            Driver.RotateTakt
          }
 
          if ((count_l >= Setpunt_l - 1138) && (count_r <= Setpunt_r + 1138)) { //1138.97 = 90 graden linksom draaien

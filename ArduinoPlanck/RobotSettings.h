@@ -66,7 +66,7 @@ const int TB6612_DIRR_B2   = PA9;   // pin 26  jumper pin 31 PB12
 #define PID_Kp            1000   // hoekerr gain / 4096
 #define PID_OUT_CLIP        12   // correctie clip (graden)
 
-#define ROTATE_CLIP     (10*256)
+#define ROTATE_CLIP_Q8  (10*256)
 #define ROTATE_P_GAIN   (0.08)
 #define ROTATE_D_GAIN   (0.05)
 
