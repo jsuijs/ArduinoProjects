@@ -46,6 +46,7 @@ void ProgrammaTakt()
       case 0 : { // Programma: stil staan
          if (Program.NewState) {
             Driver.Pwm(0, 0); // only on entry, so CLI-commands can be used in this state.
+            Lpp.Stop();
          }
       }
       break;
