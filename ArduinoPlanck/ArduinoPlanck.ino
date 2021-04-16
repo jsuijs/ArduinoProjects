@@ -167,7 +167,7 @@ void Execute(int Param[])
    if (Command.Match("DriveRotate",    1)) Driver.Rotate(Param[0]);
    if (Command.Match("DriveRotateRel", 1)) Driver.RotateRel(Param[0]);
    if (Command.Match("DriveArc",       4)) Driver.Arc(Param[0], Param[1], Param[2], Param[3]);
-   if (Command.Match("DdriveStop",      0)) Driver.Stop();
+   if (Command.Match("DriveStop",      0)) Driver.Stop();
 
    if (Command.Match("LppStatus",      0)) { Lpp.ReadStatus(); Lpp.PrintStatus(); }
    if (Command.Match("LppStart",       0)) Lpp.Start();
@@ -175,4 +175,5 @@ void Execute(int Param[])
 
    if (Command.Match("PfKey",          1)) PfKeySet(Param[0]);
    if (Command.Match("Position",       0)) Position.Print();
+   if (Command.Match("PositionReset",  0)) Position.Reset();
 }

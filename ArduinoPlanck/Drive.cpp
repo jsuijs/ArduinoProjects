@@ -2,9 +2,9 @@
 // Drive.cpp
 //-----------------------------------------------------------------------------
 //
-// Per 'bewegingstype' heeft deze class 2 methodes (functies). Neem bijvoorbeeld
-// de beweging 'SpeedLR' (M_SPEED_LR), waarme je de gewenste snelheid van de
-// linkse en rechtse motor kunt aangeven.
+// Per 'bewegingstype' heeft in deze class 2 methodes (functies). Neem
+// bijvoorbeeld de beweging 'SpeedLR' (M_SPEED_LR), waarme je de gewenste
+// snelheid van de linkse en rechtse motor kunt aangeven.
 // De eerste methode is
 //
 //    void SpeedLR(int SpeedL, int SpeedR);
@@ -32,7 +32,6 @@
 // Een beweging als 'SpeedLR' kent geen eindpunt. De methode IsDone() geeft
 // dan nooit 'true' terug. In dit geval bepaal je op een andere manier wanneer
 // je een volgende beweging start.
-//
 //-----------------------------------------------------------------------------
 #include "MyRobot.h"
 
@@ -80,9 +79,8 @@ void TDrive::Takt()
          if (PrevIsDone == false) Motors(0,0);  // call once
          PrevIsDone = true;
          return;
-      } else {
-         PrevIsDone = false;
       }
+      PrevIsDone = false;
 
       //CSerial.printf("Drive.Takt %d %d %d\n", DriveMode, Param1, Param2);
       switch(DriveMode) {
@@ -313,61 +311,47 @@ void TDrive::UpdateSpeedSP(int InSpeedL, int InSpeedR, int MaxSlopeP)
 // return: true when done
 //-----------------------------------------------------------------------------
 bool TDrive::RotateTakt(bool FirstCall, int InDegrees)
-   {  static int PrevResterendHoek_q8;
-      static int ResterendHoek_q8;
+   {  static int RestHoek_q8, PrevRestHoek_q8;
       static int VorigeHoek_q8;
       static char StilStand;
 
       if (FirstCall) {
-         StilStand         = 0;
-         ResterendHoek_q8  = InDegrees * 256;
-         VorigeHoek_q8     = Position.HoekHires();
+         RestHoek_q8    = InDegrees * 256;      // doel
+         VorigeHoek_q8  = Position.HoekHires(); // start
+         StilStand      = 0;                    // tbv eind-detectie
       }
 
       int DezeHoek_q8   = Position.HoekHires();
       int Delta_q8      = NormHoek(DezeHoek_q8 - VorigeHoek_q8, (360*256));
+      RestHoek_q8      -= Delta_q8;
       VorigeHoek_q8     = DezeHoek_q8;
 
-      // Update remainingAngle
+      int Clipped_q8 = Clip(RestHoek_q8, ROTATE_CLIP_Q8, -ROTATE_CLIP_Q8);
+      int SpeedR = Clipped_q8 * (float) ROTATE_P_GAIN + (RestHoek_q8 - PrevRestHoek_q8) * (float) ROTATE_D_GAIN;
+      int SpeedL = -SpeedR;
 
-      if (ABSOLUTE(ResterendHoek_q8) > ABSOLUTE(Delta_q8)) {
-         ResterendHoek_q8 -= Delta_q8;
-      } else {
-         ResterendHoek_q8 = 0;
-         SpeedLRTakt(FirstCall, 0, 0, MAX_SLOPE);
-         return true;   // done
-      }
+      CSerial.printf("RotateTakt FirstCall: %d InDegrees: %d DezeHoek: %d, RestHoek: %d, SpeedL: %d, Clipped: %d, Delta: %d\n",
+            FirstCall, InDegrees, DezeHoek_q8/256, RestHoek_q8/256, SpeedL, Clipped_q8/256, Delta_q8/256);
 
-      int Clipped_q8 = Clip(ResterendHoek_q8, ROTATE_CLIP_Q8, -ROTATE_CLIP_Q8);
-      if (FirstCall) {
-         PrevResterendHoek_q8 = ResterendHoek_q8;
-      }
-
-      int SpeedL = Clipped_q8 * (float) ROTATE_P_GAIN + (ResterendHoek_q8 - PrevResterendHoek_q8) * (float) ROTATE_D_GAIN;
-      int SpeedR = -SpeedL;
-
-//      CSerial.printf("RotateTakt FirstCall: %d InHeading: %d CurHoek: %ld, HoekError: %ld, SpeedL: %d, PrevHoekError: %d\n",
-//            FirstCall, InHeading, CurrentHoek/256, HoekError/256, SpeedL, PrevHoekError/256);
-
-      if (ABS(ResterendHoek_q8) > ABS(Clipped_q8)) {
+      if (ABS(RestHoek_q8) > ABS(Clipped_q8)) {
          // clipped
          SpeedLRTakt(FirstCall, SpeedL, SpeedR, MAX_SLOPE);
-         //      CSerial.printf("***\n");
       } else {
          //      // niet geclipped, dus we zijn er blijkbaar bijna => vertraging in SpeedLR uitschakelen.
          SpeedLRTakt(FirstCall, SpeedL, SpeedR, MAX_SLOPE * 99);
-         //      CSerial.printf("###\n");
       }
 
-      if (ResterendHoek_q8 == PrevResterendHoek_q8) {
+      if (RestHoek_q8 == PrevRestHoek_q8) {
          // stilstand
          StilStand ++;
-         if (StilStand > 10) return true; // klaar als we 10 ticks niet bewogen hebben.
+         if (StilStand > 10) {
+            return true; // klaar als we 10 ticks niet bewogen hebben.
+         }
       } else {
          StilStand = 0;
       }
 
-      PrevResterendHoek_q8 = ResterendHoek_q8;
+      PrevRestHoek_q8 = RestHoek_q8;
       return false; // not done yet
    }
 

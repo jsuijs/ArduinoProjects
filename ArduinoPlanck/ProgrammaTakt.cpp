@@ -736,9 +736,9 @@ bool MissieRandomRijden(TState &S)
 
          if (Lidar_Blik_V < 200) {
             // print a random number from 0 to 6
-            int randNumber = random(7);
+            int randNumber = random(2);
             CSerial.println(randNumber);
-            if ((randNumber == 1) || (randNumber == 3) || (randNumber == 5)) {
+            if (randNumber == 1) {
                S.State = 603;      // 180 gr R/Om draaien
             }
             else {
@@ -749,14 +749,14 @@ bool MissieRandomRijden(TState &S)
             S.State = 602;      // 180 gr R/Om draaien
          }
          if ((Lidar_Blik_LV < 200) || (Lidar_Blik_RV > Lidar_Blik_LV)) {
-            Driver.Pwm(70, 40);   // Rechts afdraaien
+            Driver.SpeedLR(70, 40);   // Rechts afdraaien
             break;
          }
          if ((Lidar_Blik_RV < 200) || (Lidar_Blik_LV > Lidar_Blik_RV)) {
-            Driver.Pwm(40, 70);   //Links afdraaien
+            Driver.SpeedLR(40, 70);   //Links afdraaien
             break;
          }
-         Driver.Pwm(60, 63);   // default rechtuit
+         Driver.SpeedLR(60, 60);   // default rechtuit
       }
       break;
 
@@ -764,12 +764,9 @@ bool MissieRandomRijden(TState &S)
       case 602 : { // 180 gr RECHTSOM draaien - Random rijden
 
          if (S.NewState) {
-            Driver.Pwm(50, -50);
+            Driver.RotateRel(-180);
          }
-
-         if ((count_l >= Setpunt_l + 2276) && (count_r <= Setpunt_r - 2276)) { //1138.97x2 = 180 graden rechtsom draaien
-            S.State = 601;
-         }
+         if (Driver.IsDone()) S.State = 601;
       }
       break;
 
@@ -777,12 +774,9 @@ bool MissieRandomRijden(TState &S)
       case 603 : { // 90 gr RECHTSOM draaien - Random rijden
 
          if (S.NewState) {
-            Driver.Pwm(50, -50);
+            Driver.RotateRel(-90);
          }
-
-         if ((count_l >= Setpunt_l + 1138) && (count_r <= Setpunt_r - 1138)) { //1138.97 = 90 graden rechtsom draaien
-            S.State = 601;
-         }
+         if (Driver.IsDone()) S.State = 601;
       }
       break;
 
@@ -790,13 +784,9 @@ bool MissieRandomRijden(TState &S)
       case 604 : { // 90 gr LINKSOM draaien - Random rijden
 
          if (S.NewState) {
-            Driver.Pwm(-50, 50);
-//            Driver.RotateTakt
+            Driver.RotateRel(90);
          }
-
-         if ((count_l >= Setpunt_l - 1138) && (count_r <= Setpunt_r + 1138)) { //1138.97 = 90 graden linksom draaien
-            S.State = 601;
-         }
+         if (Driver.IsDone()) S.State = 601;
       }
       break;
 
