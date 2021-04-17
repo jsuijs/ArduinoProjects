@@ -17,7 +17,6 @@
 extern  TwoWire Wire2;
 #define LppWire Wire2
 
-
 //-----------------------------------------------------------------------------
 // Motor configuration
 //#define USE_A4950
@@ -42,7 +41,6 @@ const int TB6612_DIRR_B2   = PA9;   // pin 26  jumper pin 31 PB12
 #define ACT_SPEED_MM_SEC(ActSpeed) ((ActSpeed * (long)ODO_TICK_TO_METRIC)) / (4 * MAIN_TAKT_INTERVAL);
 #define ABS(x) ( (x>=0) ? x : -x )
 
-
 #define MAIN_TAKT_INTERVAL 20    // miliseconds
 //#define MAIN_TAKT_RATE     (1000 / MAIN_TAKT_INTERVAL)
 #define MAX_SLOPE           10   // in mm/sec/MAIN_TAKT_INTERVAL
@@ -51,7 +49,7 @@ const int TB6612_DIRR_B2   = PA9;   // pin 26  jumper pin 31 PB12
 #define ODO_TICK_TO_METRIC       508   // afstand per tick, voor het linkse wiel, 4096 betekent dat 1 tick => 1 mm
 #define ODO_TICK_L_R            4096   // correctie voor afwijking wielgrootte rechtse wiel t.o.v. links, 4096 = even groot
 
-#define ODO_HEADING             2700   // vertaal odo ticks naar hoek, groter => meer graden per tick
+#define ODO_HEADING             2592   // vertaal odo ticks naar hoek, groter => meer graden per tick
                                        // ODO_HEADING = (ODO_TICK_TO_METRIC * 917) / WIELBASIS (in mm)
                                        // Als de robot te weinig draait, moet dit getal lager worden
 
@@ -69,6 +67,5 @@ const int TB6612_DIRR_B2   = PA9;   // pin 26  jumper pin 31 PB12
 #define ROTATE_CLIP_Q8  (10*256)
 #define ROTATE_P_GAIN   (0.08)
 #define ROTATE_D_GAIN   (0.05)
-
 
 #endif

@@ -274,7 +274,6 @@ void TDrive::Arc(int Heading, int Radius, int Speed, int EndSpeed)
       IsDoneFlag = false;
    }
 
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 // Hieronder de PRIVATE procedures
@@ -337,7 +336,7 @@ bool TDrive::RotateTakt(bool FirstCall, int InDegrees)
          // clipped
          SpeedLRTakt(FirstCall, SpeedL, SpeedR, MAX_SLOPE);
       } else {
-         //      // niet geclipped, dus we zijn er blijkbaar bijna => vertraging in SpeedLR uitschakelen.
+         // Niet geclipped, dus we zijn er blijkbaar bijna => vertraging in SpeedLR uitschakelen.
          SpeedLRTakt(FirstCall, SpeedL, SpeedR, MAX_SLOPE * 99);
       }
 
