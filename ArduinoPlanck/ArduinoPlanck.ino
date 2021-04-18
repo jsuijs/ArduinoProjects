@@ -18,6 +18,7 @@ TCommand       Command(Execute);
 TLpp           Lpp;
 HardwareSerial Serial2 (PA3, PA2);
 TwoWire        Wire2(PB11, PB10);
+TFlags         Flags(32);
 
 bool SecondLoggingOn = true;
 
@@ -176,4 +177,9 @@ void Execute(int Param[])
    if (Command.Match("PfKey",          1)) PfKeySet(Param[0]);
    if (Command.Match("Position",       0)) Position.Print();
    if (Command.Match("PositionReset",  0)) Position.Reset();
+
+   if (Command.Match("Flag",           1)) CSerial.printf("Flag %d is %d\n", Param[0], Flags.IsSet(Param[0]));
+   if (Command.Match("Flag",           2)) Flags.Set(Param[0], Param[1]);
+   if (Command.Match("FlagDump",       0)) Flags.Dump();
+
 }

@@ -144,14 +144,57 @@ class TState
       int StateStartTime;
 };
 
+//-----------------------------------------------------------------------------
+class TFlags
+{
+   public:
+
+      TFlags(int NrFlags) {
+         SetIx(NrFlags-1); // 32 means 0..31
+         NrFlagWords = WordIx + 1;
+         FlagWords   = (int *)malloc(NrFlagWords * sizeof(int));
+         for (int i=0; i<NrFlagWords; i++) FlagWords[i] = 0;;
+      }
+
+      bool IsSet(int Nr) {
+         if (!SetIx(Nr)) return false;
+         return ((FlagWords[WordIx] & (1<<BitIx)) != 0);
+      }
+
+      void Set(int Nr, bool Value) {
+         if (!SetIx(Nr)) {
+            CSerial.printf("error setting flag %d\n", Nr);
+            return;
+         }
+         if (Value) {
+            FlagWords[WordIx] |= (1<<BitIx);
+         } else {
+            FlagWords[WordIx] &= 0xFFFFFFFF ^ (1<<BitIx);
+         }
+         CSerial.printf("Flag %d set to %d (%d %d %d)\n", Nr, Value, WordIx, BitIx, NrFlagWords);
+      }
+
+      void Dump() {
+         CSerial.printf("NrFlagWords: %d\n", NrFlagWords);
+         for (int i=0; i<NrFlagWords; i++) CSerial.printf("%08x ", FlagWords[i]);
+         CSerial.printf("\n");
+      }
+
+   private:
+      int *FlagWords;
+      int NrFlagWords;  // WordIx + 1
+      int WordIx, BitIx;
+
+      bool SetIx(int Nr) {
+         WordIx = Nr / 32;
+         BitIx  = Nr - 32 * WordIx;
+         if (WordIx >= NrFlagWords) return false;  // out of range
+         if (!FlagWords)            return false;  // no vars malloc'd
+         return true;
+      }
+};
 
 // Encoders
-//void EncoderSetup();
-//void EncoderRead (int &LeftDelta, int &RightDelta);
-//void EncoderPrint();
-//void IsrEncoderL();
-//void IsrEncoderR();
-
 void InitStmEncoders();
 void ReadStmEncodersDelta(int &Left, int &Right);
 
