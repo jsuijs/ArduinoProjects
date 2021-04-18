@@ -749,14 +749,14 @@ bool MissieRandomRijden(TState &S)
             S.State = 602;      // 180 gr R/Om draaien
          }
          if ((Lidar_Blik_LV < 200) || (Lidar_Blik_RV > Lidar_Blik_LV)) {
-            Driver.SpeedLR(70, 40);   // Rechts afdraaien
+            Driver.SpeedLR(110, 60);   // Rechts afdraaien
             break;
          }
          if ((Lidar_Blik_RV < 200) || (Lidar_Blik_LV > Lidar_Blik_RV)) {
-            Driver.SpeedLR(40, 70);   //Links afdraaien
+            Driver.SpeedLR(60, 110);   //Links afdraaien
             break;
          }
-         Driver.SpeedLR(60, 60);   // default rechtuit
+         Driver.SpeedLR(110, 110);   // default rechtuit
       }
       break;
 
