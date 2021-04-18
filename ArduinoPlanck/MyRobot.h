@@ -114,10 +114,10 @@ class TState
 
       TState() { Reset(); }
 
-      void Update(const char *InName) {
+      void Update(const char *InName, bool Verbose=true) {
          NewState = false;
          if (PrevState != State) {
-            CSerial.printf("%s state %d -> %d\n", InName, PrevState, State);
+            if (Verbose) CSerial.printf("%s state %d -> %d\n", InName, PrevState, State);
 
             PrevState      = State;
             NewState       = true;
@@ -163,7 +163,7 @@ class TFlags
 
       void Set(int Nr, bool Value) {
          if (!SetIx(Nr)) {
-            CSerial.printf("error setting flag %d\n", Nr);
+            CSerial.printf("ERROR setting flag %d\n", Nr);
             return;
          }
          if (Value) {
@@ -185,7 +185,7 @@ class TFlags
       int NrFlagWords;  // WordIx + 1
       int WordIx, BitIx;
 
-      bool SetIx(int Nr) {
+      bool SetIx(int Nr) {  // return true if Nr is valid
          WordIx = Nr / 32;
          BitIx  = Nr - 32 * WordIx;
          if (WordIx >= NrFlagWords) return false;  // out of range
@@ -194,21 +194,23 @@ class TFlags
       }
 };
 
+extern TFlags Flags;
+
+//-----------------------------------------------------------------------------
 // Encoders
 void InitStmEncoders();
 void ReadStmEncodersDelta(int &Left, int &Right);
 
 extern volatile int EncoderLTeller, EncoderRTeller;  // aantal flanken
 
+//-----------------------------------------------------------------------------
 // Motors.cpp
 void SetupMotors();
 void Motors(int PwmL, int PwmR);
 
-// Motors.cpp
-//void MotorsSetup_A4950();
-//void Motors_A4950(int PwmL, int PwmR);
 
-// MotorController.
+//-----------------------------------------------------------------------------
+// MotorController.cpp
 void MotorController(int SetpointL, int SetpointR);
 
 // Utilities.cpp
@@ -217,9 +219,6 @@ long Clip(long input, long min, long max);
 void Slope(int &SlopeInOut, int Setpoint, int Step);
 long NormHoek(long hoek, long Norm);
 void Cartesian2Polar(long &hoek, int &afstand, int x, int y);
-
-// main ino
-extern bool SecondLoggingOn;
 
 // ProgrammaTakt.cpp
 void ProgrammaTakt();

@@ -36,7 +36,7 @@ void ProgrammaTakt()
       }
    }
 
-   Program.Update("Programma");
+   Program.Update("Programma", Flags.IsSet(1));
    if (Program.NewState) GlobS.Reset();   // reset statemachine van missie zelf.
 
    // Roep actieve programma 1 t/m 12  aan.
@@ -176,7 +176,7 @@ bool Rijden1Takt(bool Init)
 //-----------------------------------------------------------------------------
 bool MissieUmbMark1(TState &S)
 {
-   S.Update("UmbMark1");
+   S.Update("UmbMark1", Flags.IsSet(2));
 
    switch (S.State) {
       case 0 :    // Rij naar X, 0
@@ -278,7 +278,7 @@ bool MissieUmbMark1(TState &S)
 bool MissieHeenEnWeer(TState &S)
 {  int x;
 
-   S.Update("HW");
+   S.Update("HW", Flags.IsSet(2));
 
    CSerial.printf("hw %d %d %d %d\n", S.State, Driver.SollSpeedL, Driver.SollSpeedR, SharpRechts);
 
@@ -363,7 +363,7 @@ bool MissieHeenEnWeer(TState &S)
 bool MissieTTijd(TState &S)
 {  int x;
 
-   S.Update("TTijd");
+   S.Update("TTijd", Flags.IsSet(2));
 
    switch (S.State) {
       case 0 :    // Volg wand naar vak B
@@ -582,7 +582,7 @@ bool MissieDetectBlik(TState &S)
    static int StartRobotHoek;
 
 
-   S.Update("DetectBlik");
+   S.Update("DetectBlik", Flags.IsSet(2));
 
    switch (S.State) {
       case 0 : {    // draai naar rechts
@@ -674,9 +674,7 @@ bool MissieDetectBlik(TState &S)
    return false;  // mission nog niet gereed
 }
 
-int count_l, count_r, AfstBediening;
-int Setpunt_r;    // tussenstand encoder rechts
-int Setpunt_l;    // tussenstand encoder links
+int AfstBediening;
 
 //-----------------------------------------------------------------------------
 // RandomRijdenTakt -
@@ -684,7 +682,7 @@ int Setpunt_l;    // tussenstand encoder links
 //-----------------------------------------------------------------------------
 bool MissieRandomRijden(TState &S)
 {
-   S.Update("RandomRijden");
+   S.Update("RandomRijden", Flags.IsSet(2));
 
 //   int Lidar_A = Lpp.Sensor[0].Distance;         // Afstand achterzijde
 //   int Lidar_grV = Lpp.Sensor[1].Degrees32 / 32; // Scannen(1) Hoek van 90 graden + 180 gr tot 270 graden
@@ -718,12 +716,7 @@ bool MissieRandomRijden(TState &S)
       case 601 : { // Random rijden
 
          if (S.NewState) {
-            count_l = 0 , count_r = 0;
-            CSerial.print("Newstate 601\n");
          }
-
-         Setpunt_r = count_r;
-         Setpunt_l = count_l;
 
          int Lid_Max = 500;          // Lidar Meetwaarde beperken
          //if (Lidar_grV > Lid_Max)   Lidar_grV = Lid_Max;        // 90><180 gr valse meting

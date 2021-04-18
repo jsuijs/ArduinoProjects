@@ -20,8 +20,6 @@ HardwareSerial Serial2 (PA3, PA2);
 TwoWire        Wire2(PB11, PB10);
 TFlags         Flags(32);
 
-bool SecondLoggingOn = true;
-
 int Lijn;  // 0..7, 3 bits. 0 = wit, 7 = zwart, 1 = links, 2 = midden, 4 = rechts
 
 //---------------------------------------------------------------------------------------
@@ -85,6 +83,9 @@ void setup() {
       CSerial.printf("LPP I2C error.\n");
    }
 
+   Flags.Set(10, true);
+   Flags.Set(11, true);
+
    CSerial.printf("Opstarten gereed.\n");
 }
 
@@ -120,17 +121,14 @@ void loop() {
       NextSecTakt = ms + 1000;  // zet tijd voor volgende interval
       // hier de periodieke acties voor deze interval
 
-      if (SecondLoggingOn) {
-         // Optional logging, toggle with LIST button.
-         //
-         // CSerial.printf("Encoder L/R TPrev %d/%d TAct: %d/%d, Count: %d/%d\n",
-         //       EncoderLPeriode, EncoderRPeriode, EncoderL_LopendePeriode, EncoderR_LopendePeriode, EncoderLTeller, EncoderRTeller);
-         //Position.Print();
-         //int Batterij = analogRead(BATTERIJ_PIN);
-         //int Spanning = (int) (145L * Batterij / 960);  // 14.8 volt geeft waarde 964
-         //CSerial.printf("Batterij: %d (V * 10) (%d)\n", Spanning, Batterij);
-//         CSerial.printf("Lijn: %d (%d %d %d)\n", Lijn, digitalRead(5), digitalRead(6), digitalRead(7));
+      if (Flags.IsSet(1)) {
+         Position.Print();
       }
+
+      //int Batterij = analogRead(BATTERIJ_PIN);
+      //int Spanning = (int) (145L * Batterij / 960);  // 14.8 volt geeft waarde 964
+      //CSerial.printf("Batterij: %d (V * 10) (%d)\n", Spanning, Batterij);
+      //CSerial.printf("Lijn: %d (%d %d %d)\n", Lijn, digitalRead(5), digitalRead(6), digitalRead(7));
    }
 
    Command.Takt(CSerial);  // Console command interpreter

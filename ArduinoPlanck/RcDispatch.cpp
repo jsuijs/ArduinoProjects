@@ -45,11 +45,6 @@ void RcDispatch(int &RcData)
       }
       break;
 
-      case 0x3776 : { // list -> toggle second logging on/off
-         SecondLoggingOn = !SecondLoggingOn;
-      }
-      break;
-
       // PF-keys
       case 0x3775 : { PfKeySet(-1); break; } // STOP (special, but passed to ProgrammaTakt)
 
