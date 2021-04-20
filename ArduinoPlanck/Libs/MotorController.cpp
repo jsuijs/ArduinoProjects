@@ -1,10 +1,8 @@
 //-----------------------------------------------------------------------------
 // MotorController.cpp
 //-----------------------------------------------------------------------------
-// Deze file bevat de snelheidsregeling van de robot. Mogelijk zijn aanpassingen
-// nodig, afhankelijk van de motor, snelheid en encoder van de robot.
+// Deze file bevat de snelheidsregeling van de robot.
 //-----------------------------------------------------------------------------
-#include "MyRobot.h"
 
 // MotorController (Mc) data structure met PID var's
 struct tMc {

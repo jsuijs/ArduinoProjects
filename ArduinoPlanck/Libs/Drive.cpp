@@ -33,7 +33,6 @@
 // dan nooit 'true' terug. In dit geval bepaal je op een andere manier wanneer
 // je een volgende beweging start.
 //-----------------------------------------------------------------------------
-#include "MyRobot.h"
 
 //-----------------------------------------------------------------------------
 // TDrive - constructor

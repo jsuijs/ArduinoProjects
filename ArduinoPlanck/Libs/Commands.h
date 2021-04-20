@@ -66,6 +66,7 @@ private:
    bool HelpFlag  ;
 };
 
+#ifdef MAIN
 //-----------------------------------------------------------------------------
 // TCommand::TCommand - constructor
 //-----------------------------------------------------------------------------
@@ -463,4 +464,5 @@ byte Bcd(byte Decimal)
    return (Decimal / 10) * 16 + (Decimal % 10);
 }
 
-#endif
+#endif   // MAIN
+#endif   // COMMANDS_H

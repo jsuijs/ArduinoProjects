@@ -1,7 +1,8 @@
 //-----------------------------------------------------------------------------
 // ProgrammTakt.cpp
 //-----------------------------------------------------------------------------
-#include "MyRobot.h"
+#include "RobotSettings.h"
+#include "Libs/MyRobot.h"
 
 // prototypes
 bool Rijden1Takt(bool Init);

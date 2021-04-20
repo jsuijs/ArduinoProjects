@@ -3,7 +3,6 @@
 //                    A4950 chip direct aangesloten
 //-----------------------------------------------------------------------------
 #include "MyRobot.h"
-#ifdef USE_A4950
 
 //-----------------------------------------------------------------------------
 // SetupMotors - Stel IO in voor aansturing motoren (harde aansturing)
@@ -59,5 +58,3 @@ void Motors(int PwmL, int PwmR)
       analogWrite(A4950_PWMR2, Pwm);
    }
 }
-
-#endif

@@ -6,11 +6,17 @@
 // Position.cpp
 //-----------------------------------------------------------------------------
 #include "Arduino.h"
-#include "RobotSettings.h"
-#include "Libs/LppMaster.h"
 
-#define TICKS_360_GRADEN (360L * 256 * 256 / ODO_HEADING)
-#define GRAD2RAD(x) ((float)(x) / 57.2957795)
+#include "Libs/LppMaster.h"   // contains code...
+#include "Libs/Commands.h"    // contains code...
+
+#define TICKS_360_GRADEN   (360L * 256 * 256 / ODO_HEADING)
+#define GRAD2RAD(x)        ((float)(x) / 57.2957795)
+#define MAIN_TAKT_RATE     (1000 / MAIN_TAKT_INTERVAL)   // Hz
+#define WIEL_BASIS         ((ODO_TICK_TO_METRIC * 917L) / ODO_HEADING)
+#define RAD2GRAD(x)        ((float)(x) * 57.2957795)   // uitkomst is float, deze kan evt zonder verlies geschaald worden naar hogere resulotie
+#define ACT_SPEED_MM_SEC(ActSpeed) ((ActSpeed * (long)ODO_TICK_TO_METRIC)) / (4 * MAIN_TAKT_INTERVAL);
+#define ABS(x)             ( (x>=0) ? x : -x )
 
 template <typename T> inline
 T ABSOLUTE(const T& v) { return v < 0 ? -v : v; }
@@ -207,7 +213,6 @@ extern volatile int EncoderLTeller, EncoderRTeller;  // aantal flanken
 // Motors.cpp
 void SetupMotors();
 void Motors(int PwmL, int PwmR);
-
 
 //-----------------------------------------------------------------------------
 // MotorController.cpp

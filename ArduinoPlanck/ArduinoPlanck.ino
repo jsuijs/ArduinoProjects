@@ -3,11 +3,11 @@
 //-----------------------------------------------------------------------------
 
 #define MAIN
-#include "MyRobot.h" // super-include
+#include "RobotSettings.h"          // project-instellingen
+#include "Libs/MyRobot.h"           // super-include
+#include "Libs/Motors_TB6612.cpp"   // Kies je motor-sturing
 
 // include code
-#include "Libs\Utilities.cpp"
-#include "Libs/Commands.h"    // contains code...
 
 void Execute();   // prototype
 
@@ -179,5 +179,4 @@ void Execute(int Param[])
    if (Command.Match("Flag",           1)) CSerial.printf("Flag %d is %d\n", Param[0], Flags.IsSet(Param[0]));
    if (Command.Match("Flag",           2)) Flags.Set(Param[0], Param[1]);
    if (Command.Match("FlagDump",       0)) Flags.Dump();
-
 }
