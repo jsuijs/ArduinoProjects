@@ -1,20 +1,38 @@
-HardwareSerial Serial2 (PA3, PA2);
-#define CSerial Serial2
+#define UNO
 
-#include <Wire.h>
-TwoWire Wire99(PB11, PB10);
-#define MyWire Wire99
+#ifdef UNO
+   #define CSprintf printf
+   #define CSerial Serial
+
+   #include <Wire.h>
+   #define MyWire Wire
+
+   int my_putc(char c, FILE *t) { t = t;  return CSerial.write(c); } // to support printf
+
+#else
+   HardwareSerial Serial2 (PA3, PA2);
+   #define CSprintf Serial2.printf
+   #define CSerial Serial2
+
+   #include <Wire.h>
+   TwoWire Wire99(PB11, PB10);
+   #define MyWire Wire99
+#endif
 
 #include "LppMaster.h"
 TLpp Lpp;
 
 int PeriodicInterval = 0;     // 0 = alleen toolkit, anders periodiek uitlezen printen.
 
-
-
-
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 void setup() {
    CSerial.begin(115200);      // start serial
+
+#ifdef UNO
+   fdevopen( &my_putc, 0);  // device 0 (stdout) output naar my_putc()
+#endif
 
    PrintTkMsg();              // print helptekst van I2C Master Toolkit
 
@@ -36,10 +54,13 @@ void setup() {
 
       Lpp.Start();
    } else {
-      CSerial.printf("LPP I2C error.\n");
+      CSprintf("LPP I2C error.\n");
    }
 }
 
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 void loop()
 {
 
@@ -49,14 +70,14 @@ void loop()
 
       if (Lpp.IsRunning()) {
          Lpp.ReadSensors();
-         CSerial.printf("Sensor 0, graden: %d, afstand: %d\n", Lpp.Sensor[0].Degrees32/32, Lpp.Sensor[0].Distance);
+         CSprintf("Sensor 0, graden: %d, afstand: %d\n", Lpp.Sensor[0].Degrees32/32, Lpp.Sensor[0].Distance);
 
          Lpp.ReadArray();
-         CSerial.printf("Array: ");
+         CSprintf("Array: ");
          for (int i=0; i<9; i++) {
-            CSerial.printf("%5d ", Lpp.Array[i].Distance);
+            CSprintf("%5d ", Lpp.Array[i].Distance);
          }
-         CSerial.printf("\n");
+         CSprintf("\n");
       }
 
       delay(PeriodicInterval);

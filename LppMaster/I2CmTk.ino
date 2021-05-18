@@ -9,8 +9,6 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //-----------------------------------------------------------------------------
 
-static void(* resetFunc) (void) = 0;//declare reset function at address 0
-
 /*=====================================================================
  TCommand :
  ---------------------------------------------------------------------*/
@@ -239,7 +237,7 @@ public:
 
   void Print()
   {
-    CSerial.printf( "Cnt = %d  A=%u  B=%u  C=%u  Cmd=%s\r\n", ParamCount, Number[0], Number[1], Number[2], Cmd) ;
+    CSprintf( "Cnt = %d  A=%u  B=%u  C=%u  Cmd=%s\r\n", ParamCount, Number[0], Number[1], Number[2], Cmd) ;
   }
 
 
@@ -266,6 +264,8 @@ public:
     if (MatchCommand("?",         0)) PrintTkMsg();
     if (MatchCommand("debug",     1)) Lpp.I2cDebug = Number[0];
     if (MatchCommand("scan",      0)) BusScan();
+
+#ifndef UNO
     if (MatchCommand("fill",      3)) EepromFill(Number[0], Number[1], Number[2]);
 
     if (MatchCommand("rnb",       1)) I2cReader(Number[0], 0, 1,       0);
@@ -284,8 +284,7 @@ public:
     if (MatchCommand("rb",        3)) I2cReader2(Number[0], 1, Number[2], Number[1]);
     if (MatchCommand("rw",        3)) I2cReader2(Number[0], 2, Number[2], Number[1]);
 
-    if (MatchCommand("reset",     0)) resetFunc();
-
+#endif
 
     // commands below match LidarPreprocessor commands from RobotLib.
     // (with some short versions added)
@@ -322,24 +321,24 @@ public:
           return Cmd[0];
         }
         else {
-          CSerial.printf("Onbekend cmd '%s' (2)\n", Cmd);
+          CSprintf("Onbekend cmd '%s' (2)\n", Cmd);
           return 2;
         }
         break;
       }
     case 1 :
       {
-        CSerial.printf("Error: # params - cmd '%s'\n", Cmd);
+        CSprintf("Error: # params - cmd '%s'\n", Cmd);
         return 2;
       }
     case 0 :
       {
-        CSerial.printf("TkCmd '%s' gereed.\n", Cmd);
+        CSprintf("TkCmd '%s' gereed.\n", Cmd);
         return 1;
       }
     default :
       {
-        CSerial.printf("Error 0924\n");
+        CSprintf("Error 0924\n");
         return 2;
       }
     }
@@ -377,7 +376,7 @@ char CGet()
     if (r == 0) return 0;  // still reading line
 
     if (r < 0) {
-      CSerial.printf("Cmd parse err %d\n", r);
+      CSprintf("Cmd parse err %d\n", r);
       Command.Clear();
       return 0;
     }
@@ -401,7 +400,7 @@ void PrintTkMsg()
   CSerial.print(F("\nI2CmTk - I2C Master Toolkit versie 0.81\n"));
   CSerial.print(F("Ontwikkeld voor de Workshop 'Arduino & I2C'.\n"));
   CSerial.print(F("(c) 2016-2017 Karel Dupain & Joep Suijs\n"));
-  CSerial.printf("Gecompileerd: %s %s\n", __DATE__, __TIME__ );
+  CSprintf("Gecompileerd: %s %s\n", __DATE__, __TIME__ );
 }
 
 //-----------------------------------------------------------------------------
@@ -429,12 +428,12 @@ void BusScan()
   for (int I2cSlaveAddress = 0; I2cSlaveAddress<127; I2cSlaveAddress++) {
 
     if (AddressProbe(I2cSlaveAddress)) {
-      CSerial.printf("%2x", I2cSlaveAddress);
+      CSprintf("%2x", I2cSlaveAddress);
     }
-    CSerial.printf(".");
-    if ((I2cSlaveAddress & 0x01F) == 0x1F) CSerial.printf("\n");
+    CSprintf(".");
+    if ((I2cSlaveAddress & 0x01F) == 0x1F) CSprintf("\n");
   }
-  CSerial.printf("\n");
+  CSprintf("\n");
 }
 
 
@@ -478,7 +477,7 @@ static void _SetupRegisterAddress(byte *TxBuffer, int RegBytes, int RegAddr)
 // RegBytes:  nr of bytes, 0, 1 or 2, in RegAddr
 // DataBytes: nr of bytes, 1 or 2, to be read
 //-----------------------------------------------------------------------------
-static void I2cReader(int Slave, int RegBytes, int DataBytes, int RegAddr)
+void I2cReader(int Slave, int RegBytes, int DataBytes, int RegAddr)
 {
   unsigned int Data;
   bool r;
@@ -515,12 +514,12 @@ static void I2cReader(int Slave, int RegBytes, int DataBytes, int RegAddr)
     }
   }
 
-  CSerial.printf("I2c read 0x%02x, ", Slave);
+  CSprintf("I2c read 0x%02x, ", Slave);
   if (RegBytes != 0) {
-    CSerial.printf("Reg: %d (0x%02x), Data: %u (0x%x)\n", RegAddr, RegAddr, Data, Data);
+    CSprintf("Reg: %d (0x%02x), Data: %u (0x%x)\n", RegAddr, RegAddr, Data, Data);
   }
   else {
-    CSerial.printf("Data: %u\n", Data);
+    CSprintf("Data: %u\n", Data);
   }
 }
 
@@ -530,7 +529,7 @@ static void I2cReader(int Slave, int RegBytes, int DataBytes, int RegAddr)
 // RegBytes:  nr of bytes, 0, 1 or 2, in RegAddr
 // DataBytes: nr of bytes, 1 or 2, to write
 //-----------------------------------------------------------------------------
-static void I2cWriter( int Slave, int RegBytes, int DataBytes, int RegAddr, int Data)
+void I2cWriter( int Slave, int RegBytes, int DataBytes, int RegAddr, int Data)
 {
   bool r = 1;
   byte TxBuffer[4];
@@ -566,12 +565,12 @@ static void I2cWriter( int Slave, int RegBytes, int DataBytes, int RegAddr, int 
     return;
   }
 
-  CSerial.printf("Slave: 0x%02x, ", Slave);
+  CSprintf("Slave: 0x%02x, ", Slave);
   if (RegBytes != 0) {
-    CSerial.printf("register %d (0x%02x) set to %d (0x%02x)\n", RegAddr, RegAddr, Data, Data);
+    CSprintf("register %d (0x%02x) set to %d (0x%02x)\n", RegAddr, RegAddr, Data, Data);
   }
   else {
-    CSerial.printf("Data: %d (0x%02x)\n", Data, Data);
+    CSprintf("Data: %d (0x%02x)\n", Data, Data);
   }
 }
 
@@ -581,20 +580,20 @@ static void I2cWriter( int Slave, int RegBytes, int DataBytes, int RegAddr, int 
 // RegBytes:  nr of bytes, 0, 1 or 2, in RegAddr
 // DataBytes: nr of bytes, (1..32)
 //-----------------------------------------------------------------------------
-static void I2cReader2(int Slave, int RegBytes, int DataBytes, int RegAddr)
+void I2cReader2(int Slave, int RegBytes, int DataBytes, int RegAddr)
 {
   byte TxBuffer[2];
   byte RxBuffer[34];
 
   if (DataBytes > 32) {
-    CSerial.printf("#bytes limited to 32!\n");
+    CSprintf("#bytes limited to 32!\n");
     DataBytes = 32;
   }
 
   _SetupRegisterAddress(TxBuffer, RegBytes, RegAddr);
 
   if (!I2cSendReceive(Slave, RegBytes, DataBytes, TxBuffer, RxBuffer)) {
-    CSerial.printf("I2cRead() - comms err\n");
+    CSprintf("I2cRead() - comms err\n");
     return;
   }
   HexDump(RxBuffer, DataBytes);
@@ -621,17 +620,17 @@ void EepromFill(int Slave, int Size, int Value)
     TxBuffer[1] = i & 0xFF;
     r = I2cSendReceive(Slave, 18, 0, TxBuffer, NULL);
     if (!r) {
-      CSerial.printf("\nEeFill err %d.\n", i);
+      CSprintf("\nEeFill err %d.\n", i);
       return;
     }
 
-    if ((i & 0x3F) == 0)  CSerial.printf(".");  // print dot in one of 64 runs.
+    if ((i & 0x3F) == 0)  CSprintf(".");  // print dot in one of 64 runs.
 
     while (AddressProbe(Slave) == false) {
       // wait for eeprom to finish write
     }
   }
-  CSerial.printf("\nEeFill done\n");
+  CSprintf("\nEeFill done\n");
 }
 
 //-----------------------------------------------------------------------------
@@ -639,5 +638,5 @@ void EepromFill(int Slave, int Size, int Value)
 //-----------------------------------------------------------------------------
 void I2cError(int Slave, int ErrorNr)
 {
-  CSerial.printf("I2c error bij communicatie met slave 0x%02x (%d).\n", Slave, ErrorNr);
+  CSprintf("I2c error bij communicatie met slave 0x%02x (%d).\n", Slave, ErrorNr);
 }
