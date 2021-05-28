@@ -158,7 +158,7 @@ void uKitServo::setServoStiffness(unsigned char id,unsigned char stiffness){
   TXD(0xFA,id,8,0x01,tData );
 }
 
-int uKitServo::readServoAnglePD(unsigned char id){//单个舵机回读(掉电回读）
+int uKitServo::readServoAnglePD(unsigned char id){// Single servo readback (read back after power failure)
   int tCmd=0,tRet=0;
   unsigned char aa[4]={0,0,0,0};
   tRet=ubtServoProtocol(0xFA,id,0x02,aa);

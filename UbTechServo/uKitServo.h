@@ -27,11 +27,11 @@ public:
   void setServoAngle(unsigned char id,int angle, int times);//舵机舵机模式，id是舵机号，angle是角度（-118°~118°），times是运行时间（300-5000）
   void setServoAngles(unsigned char *id, int *angle,int times);
 
-  void setServoStop(unsigned char id);//单个舵机停止函数
-  int  readServoAnglePD(unsigned char id);//单个舵机回读，返回舵机角度值(掉电回读）
-  void readServoAnglePD_M(unsigned char *read_id,char num);//多个舵机回读，返回舵机角度值(掉电回读）
-  int  readServoAngleNPD(unsigned char id);//单个舵机回读，返回舵机角度值(不掉电回读）
-  void readServoAngleNPD_M(unsigned char *read_id,char num);//多个舵机回读，返回舵机角度值(不掉电回读）
+  void setServoStop(unsigned char id);                         // Single servo stop function
+  int  readServoAnglePD(unsigned char id);                     // Single servo read back, return the servo angle value (return after power off)
+  void readServoAnglePD_M(unsigned char *read_id,char num);    // Read back multiple servos, return the angle value of the servos (read back after power failure)
+  int  readServoAngleNPD(unsigned char id);                    // Single servo read back, return the servo angle value (read back without power down)
+  void readServoAngleNPD_M(unsigned char *read_id,char num);   // Read back multiple servos, return the angle value of the servos (read back without power failure)
   void ServoRead();
 
   void playMotion(unsigned char *id,signed char **action,int *times);

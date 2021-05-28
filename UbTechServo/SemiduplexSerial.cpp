@@ -26,8 +26,6 @@ unsigned char SemiduplexSerial::Cheak_Sum(unsigned char len, unsigned char *buf)
   return  (uint8_t)(sum);
 }
 
-
-
 unsigned short SemiduplexSerial::ubtServoProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data){
   unsigned short tRet = 0;
   unsigned char tCnt = 0;
@@ -59,23 +57,26 @@ Retry_Servo:
 
   temp = (Usart3_Rx_Ack_Len+ 5) ;  //接收消息长度,用于计算接收时间,1个字节 0.087ms,预留5个空闲,10%误差
 //3  Serial3.begin(115200);  //uart3
-//3  Serial3.setTimeout(temp*87*110/100 / 400);  //设置超时ms
+  Serial1.setTimeout(temp*87*110/100 / 400);  //设置超时ms
+
 //3  Serial2.begin(115200);  //设置波特率
 //3  Serial2.write(buf,len + 1);  //发送消息
 //3  Serial2.end();  //关闭串口2,否则会影响接收消息
-//3  tRet = Serial3.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10); //接收应答
+  UbtWrite(buf, len+1);
+
+  tRet = Serial1.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10); //接收应答
 
 //3  Serial3.end();  //关闭串口3,否则会影响接收消息
 
-  if(tRet == 0) //没有接收到消息
+  if(tRet == 0) // No message received
   {
     if( tCnt < 2)
     {
-      tCnt ++;  //重试
+      tCnt ++;  // retry
       goto  Retry_Servo;
     }
   }
-  else  //接收到消息
+  else  // Message received
   {
 
     Usart3_Rx_Buf_count = tRet;
@@ -106,14 +107,10 @@ Retry_Servo:
         break;
 
     }
-
-
-
-
-
   }
   return tRet;
 }
+
 unsigned char SemiduplexSerial::ubtServoIdProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data){
   unsigned char tRet = 0;
   unsigned char tCnt = 0;
@@ -135,20 +132,27 @@ unsigned char SemiduplexSerial::ubtServoIdProtocol(unsigned char Head,unsigned c
 
   temp = (Usart3_Rx_Ack_Len+ 5) ;  //接收消息长度,用于计算接收时间,1个字节 0.087ms,预留5个空闲,10%误差
 //3  Serial3.begin(115200);  //uart3
-//3  Serial3.setTimeout(temp*87*110/100 / 400);  //设置超时ms
+
+   while (Serial1.available()) Serial1.read(); // flush data
+
+  Serial1.setTimeout(temp*87*110/100 / 400);  // Set timeout ms
+
 //3  Serial2.begin(115200);  //设置波特率
 //3  Serial2.write(buf,len + 1);  //发送消息
 //3  Serial2.end();  //关闭串口2,否则会影响接收消息
-//3  tRet = Serial3.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+len); //接收应答
-//3  Serial3.end();  //关闭串口3,否则会影响接收消息
+  UbtWrite(buf, len+1);
 
-//   for(int i=0;i<Usart3_Rx_Ack_Len+len;i++){
-//    Serial.print(Usart3_Rx_Buf[i],HEX);
-//    Serial.print(",");
-//   }
-//   Serial.println();
-//   Serial.println(Cheak_Sum( (len - 3),(u8*)&Usart3_Rx_Buf[len+3]),HEX);
-//   Serial.println(Usart3_Rx_Buf[len+9],HEX);
+
+  tRet = Serial1.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+len); // Receive reply
+//  Serial1.end();  //关闭串口3,否则会影响接收消息
+
+   for(int i=0;i<Usart3_Rx_Ack_Len+len;i++){
+    Serial.print(Usart3_Rx_Buf[i],HEX);
+    Serial.print(",");
+   }
+   Serial.println();
+   Serial.println(Cheak_Sum( (len - 3),(u8*)&Usart3_Rx_Buf[len+3]),HEX);
+   Serial.println(Usart3_Rx_Buf[len+9],HEX);
 
   if(Usart3_Rx_Buf[len+1]==0xFC && Usart3_Rx_Buf[len+2]==0xCF && Usart3_Rx_Buf[len+4]==0xAA && Cheak_Sum( (len - 3),(u8*)&Usart3_Rx_Buf[len+3])==Usart3_Rx_Buf[len+9]){
        tRet=Usart3_Rx_Buf[len+3];
@@ -281,13 +285,11 @@ unsigned long SemiduplexSerial::TXD(unsigned char Head,unsigned char ServoNO,uns
   unsigned char buf[60];
   unsigned char length = 9; //9+1
 
-return 0;
-
   unsigned char Usart3_Rx_Ack_Len=0;
 
   memset((void *)Usart3_Rx_Buf,0,sizeof(Usart3_Rx_Buf));
   memset((void *)buf,0,sizeof(buf));
-  Usart3_Rx_Ack_Len = 17; //应答消息长度
+  Usart3_Rx_Ack_Len = 17; // Reply message length
 
   buf[0] = Head;  // Fill the protocol header
   buf[1] = swab8(Head);
@@ -334,7 +336,7 @@ Retry_Servo:
 
   temp = (Usart3_Rx_Ack_Len + 5) ;  // The length of the received message, used to calculate the receiving time, 1 byte 0.087ms, reserved 5 free, 10% error
 //3  Serial3.begin(115200);  //uart3
-//3  Serial3.setTimeout(temp*87*110/100 / 400);  // Set timeout ms
+  Serial1.setTimeout(temp*87*110/100 / 400);  // Set timeout ms
 
 
 //  Serial2.begin(115200);  // Set the baud rate
@@ -342,13 +344,14 @@ Retry_Servo:
 //  Serial2.end();  // Close the serial port 2, otherwise it will affect the reception of messages
    UbtWrite(buf, length+1);
 
-//3  tRet = Serial3.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10); //Receive reply
+  tRet = Serial1.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10); //Receive reply
 //3  Serial3.end();  // Close serial port 3, otherwise it will affect receiving messages
-  if(tRet > RXD_OFFSET) // Print return message
-  {
-      //Serial.write(Usart3_Rx_Buf + RXD_OFFSET,tRet - RXD_OFFSET);
-      //Serial.print("\r\n");
-  }
+
+//  if(tRet > RXD_OFFSET) // Print return message
+//  {
+//      Serial.write(Usart3_Rx_Buf + RXD_OFFSET,tRet - RXD_OFFSET);
+//      Serial.print("\r\n");
+//  }
 
   if(tRet == 0) // No message received
   {
@@ -481,7 +484,7 @@ void SemiduplexSerial::Clr_Servo_list(unsigned char Servo_NO){
 
 /**@brief EN:Check the number of the servo/CN:检查舵机个数
  */
-void SemiduplexSerial::check_servo(){//花两秒时间
+void SemiduplexSerial::check_servo(){// Take two seconds
   unsigned char tID = 1;
   unsigned char tData[4] = {0,0,0,0};
 
@@ -492,7 +495,7 @@ void SemiduplexSerial::check_servo(){//花两秒时间
   {
     if( TXD(0xFC,tID,4,0x01,tData ) != 0 )
     {
-      Set_Servo_list(tID - 1);  //设置舵机列表,后面多舵机使用
+      Set_Servo_list(tID - 1);  // Set the list of servos, and use multiple servos later
       gServos++;
     }
     else
@@ -500,9 +503,9 @@ void SemiduplexSerial::check_servo(){//花两秒时间
       Clr_Servo_list(tID - 1);
     }
   }
- Serial.print("\tTotal Servo:");
+  Serial.print("\tTotal Servo:");
   Serial.print(gServos, DEC);
-Serial.print("\r\n");
+  Serial.print("\r\n");
 }
 
 

@@ -30,7 +30,12 @@ void UbtTest(int P1, int P2)
    UbtServo.setServoAngle(P1, P2, 200); // servo 1, to 45 graden in 200 ms(?)
 
    delay(100);
-   CSerial.printf("getServoId %d\n", (int)UbtServo.getServoId());
+//   CSerial.printf("getServoId %d\n", (int)UbtServo.getServoId());
+   CSerial.printf("readServoAnglePD %d\n", UbtServo.readServoAnglePD(P1));
+
+
+   UbtServo.check_servo();
+
 }
 
 void UbtWrite(unsigned char *buf, int length)
