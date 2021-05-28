@@ -267,7 +267,7 @@ void uKitServo::ServoRead(){
   static unsigned char ServoId[18]={0},ServoIdRead[18]={0};
   static int start=0;
   if(start==0){
-  Serial.print("当前读取的舵机ID：{");
+  Serial.print("Servo currently read ID：{");
   for(int i=1;i<=18;i++){
     ServoId[i]=getServoId(i);
     if(ServoId[i]!=0){

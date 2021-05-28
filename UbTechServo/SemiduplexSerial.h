@@ -4,7 +4,6 @@
 #define SEMIDUPLEXSERIAL_h
 
 #include <Arduino.h>
-#include <SoftwareSerial.h>
 #define VISION_SERIAL_BUFSIZE     256
 #define VISION_SOFTSERIAL_RXPIN   64
 #define VISION_SOFTSERIAL_TXPIN   63
@@ -15,7 +14,7 @@ public:
 
     unsigned short ubtServoProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
     unsigned char ubtServoIdProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
-    unsigned char ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
+    void ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
     unsigned short ubtServoProtocol1M(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
 
     unsigned char Cheak_Sum(unsigned char len, unsigned char *buf);

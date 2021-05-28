@@ -24,7 +24,6 @@ uKitServo UbtServo;
 TwoWire        Wire2(PB11, PB10);
 TFlags         Flags(32);
 
-Servo myservo;  // create servo object to control a servo
 
 //---------------------------------------------------------------------------------------
 // RC5 stuff start
@@ -87,8 +86,6 @@ void setup() {
 
    Buzzer.Beep(30, 2);
    CSerial.printf("Opstarten gereed.\n");
-
-   myservo.attach(PB5);  // attaches the servo on pin 9 to the servo object
 }
 
 //---------------------------------------------------------------------------------------
@@ -156,6 +153,6 @@ void Execute(int Param[])
    if (Command.Match("Flag",           2)) Flags.Set(Param[0], Param[1]);
    if (Command.Match("FlagDump",       0)) Flags.Dump();
 
-   if (Command.Match("Servo",          1)) myservo.write(Param[0]);
+   if (Command.Match("Servo",          2)) UbtTest(Param[0], Param[1]);
 }
 
