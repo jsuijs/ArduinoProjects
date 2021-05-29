@@ -5,43 +5,41 @@ extern HardwareSerial Serial2;
 
 #include"uKitServo.h"
 
-
-
+//-----------------------------------------------------------------------------
+// uKitServo::setServoId - change Id of servo
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-unsigned char uKitServo::setServoId(char oldid,char newid){
-  unsigned char tRet = 0;
-  unsigned char buf[2];
-  buf[0]=0x00;
-  buf[1]=newid;
-  tRet=ubtServoProtocol(0xFA,oldid,0xCD,buf);
-  //tRet=TXD(0xFA,oldid,4,0xCD,buf);
-  delay(5);
-  return tRet;
-
-}
+unsigned char uKitServo::setServoId(char oldid,char newid)
+   {
+      unsigned char tRet = 0;
+      unsigned char buf[2];
+      buf[0] = 0x00;
+      buf[1] = newid;
+      tRet = ubtServoProtocol(0xFA, oldid, 0xCD, buf);
+      delay(5);
+      return tRet;
+   }
 
 //-----------------------------------------------------------------------------
 // uKitServo::getServoId - Return Id of lowest servo
 //-----------------------------------------------------------------------------
 // Return: Id on success, 0 on failure
 //-----------------------------------------------------------------------------
-unsigned char uKitServo::getServoId(){
-  unsigned char tRet = 0;
-  unsigned char buf[4];
-  for(int testid=1;testid<=18;testid++){
-    buf[0]=0x00;
-    buf[1]=0x00;
-    buf[2]=0x00;
-    buf[3]=0x00;
-    tRet=ubtServoIdProtocol(0xFC,testid,0x01,buf);
-    delay(2);
-    if(tRet==testid){
-      return tRet;
-    }
-  }
- return 0;
+unsigned char uKitServo::getServoId()
+   {
+      unsigned char tRet = 0;
+      unsigned char buf[4];
+      for (int testid=1;testid<=18;testid++) {
+         buf[0] = 0x00;
+         buf[1] = 0x00;
+         buf[2] = 0x00;
+         buf[3] = 0x00;
+         tRet=ubtServoIdProtocol(0xFC, testid, 0x01, buf);
+         delay(2);
+
+         if (tRet==testid) return tRet;
+      }
+      return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -104,29 +102,23 @@ unsigned char uKitServo::getServoId1M(char id){
     return tRet;
 }
 
-// Servo geeft antwoord maar geen reactie??
-void uKitServo::setServoTurn(unsigned char id,int dir, int speed){
-  unsigned char buf[4];
-  int speeds=0;
-  if(speed > 0)
-  {
-    speeds=map(speed,1,255,50,1000);
-  }
-    if(dir==0){
-        buf[0]=0xFD;
-        buf[1]=0x00;
-        buf[2]=(speeds &0xFF00) >> 8;
-        buf[3] = speeds & 0x00FF;
-    }
-    else if(dir==1){
-        buf[0]=0xFE;
-        buf[1]=0x00;
-        buf[2]=(speeds &0xFF00) >> 8;
-        buf[3] = speeds & 0x00FF;
-    }
+// Servo geeft antwoord maar geen actie??
+void uKitServo::setServoTurn(unsigned char id,int dir, int speed)
+   {
+      unsigned char buf[4];
+      int speeds=0;
 
-  ubtServoActionProtocol(0xFA,id,0x01,buf);
-}
+      if (speed > 0) speeds=map(speed,1,255,50,1000);
+
+      if (dir==0) buf[0] = 0xFD;
+      else        buf[0] = 0xFE;
+
+      buf[1] = 0x00;
+      buf[2] = (speeds & 0xFF00) >> 8;
+      buf[3] =  speeds & 0x00FF;
+
+      ubtServoActionProtocol(0xFA,id,0x01,buf);
+   }
 
 //void uKitServo::setServoTurns(unsigned char *id,int *dir, int *speed){
 //  for(int i=0;i<sizeof(id)/sizeof(id[0]);i++){
@@ -164,43 +156,44 @@ void uKitServo::setServoStop(unsigned char id){
 }
 
 //-----------------------------------------------------------------------------
-// uKitServo::setServoStiffness - ?? 255 = off?
+// uKitServo::setServoStiffness - ?? 255 = off?  only 4 bytes (of 8) defined...
 //-----------------------------------------------------------------------------
 // stiffness inequal to 255 enables power and might turn servo to a
 // new position...
 //-----------------------------------------------------------------------------
 void uKitServo::setServoStiffness(unsigned char id,unsigned char stiffness){
-  unsigned char tData[4];
+  unsigned char tData[8];  // JS: was 4!!
   tData[0]=stiffness;
   tData[1]=0;
   tData[2]=0;
   tData[3]=0;
 
+//  TXD(0xFA,id,8,0x01,tData );
   TXD(0xFA,id,8,0x01,tData );
 }
 
-int uKitServo::readServoAnglePD(unsigned char id){// Single servo readback (read back after power failure)
-  int tCmd=0,tRet=0;
-  unsigned char aa[4]={0,0,0,0};
-  tRet=ubtServoProtocol(0xFA,id,0x02,aa);
-  if(tRet==0){
-    tCmd=0;
-  }
-  else if(tRet==1){
-    tCmd=-120;
-  }
-  else{
-    tCmd=tRet-120;
-  }
+//-----------------------------------------------------------------------------
+// uKitServo::readServoAnglePD - disable servo & read angle
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+int uKitServo::readServoAnglePD(unsigned char id)
+   {
+      int tCmd=0,tRet=0;
+      unsigned char aa[4]={0,0,0,0};
 
-  delay(5);
-  if(tCmd>=-120 && tCmd<=120 )
-    return tCmd;
-  else
-    return 0;
+      tRet=ubtServoProtocol(0xFA,id,0x02,aa);
 
+      delay(5);
 
-}
+      if (tRet==0) return 0;
+
+      if (tRet==1) return -120;
+
+      tCmd=tRet-120;
+      if (tCmd>=-120 && tCmd<=120) return tCmd;
+
+      return 0;
+   }
 
 //void uKitServo::readServoAnglePD_M(unsigned char *read_id,char num)//舵机回读
 //{
@@ -231,6 +224,7 @@ int uKitServo::readServoAnglePD(unsigned char id){// Single servo readback (read
 //      Serial.print("}");
 //}
 
+// uKitServo::readServoAngleNPD - no response from servo...
 int uKitServo::readServoAngleNPD(unsigned char id){ // Single servo read back (read back without power down)
   int tCmd=0,tRet=0;
   unsigned char aa[4]={0,0,0,0};
@@ -294,9 +288,8 @@ void uKitServo::ServoRead(){
     if(ServoId[i]!=0){
       ServoIdRead[t]=ServoId[i];
       Serial.print(ServoIdRead[t]);
-        Serial.print(",");
-      ++t;
-
+      Serial.print(",");
+      t++;
     }
   }
   Serial.println("}");

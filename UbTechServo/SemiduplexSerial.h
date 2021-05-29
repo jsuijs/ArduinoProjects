@@ -45,17 +45,17 @@ private:
   #define  NULL         ((void *) 0)
   #endif
 
-  #ifndef swab16
-  #define swab16(x) ((x&0x00ff) << 8 | (x&0xff00) >> 8)
-  #endif
+//  #ifndef swab16
+//  #define swab16(x) ((x&0x00ff) << 8 | (x&0xff00) >> 8)
+//  #endif
 
   #ifndef swab8
   #define swab8(x) ((x&0x0f) << 4 | (x&0xf0) >> 4)
   #endif
 
-  #ifndef swab32
-  #define swab32(x) (((x << 8)&0x00ff0000)|((x >> 8)&0x0000ff00)|((x << 24)&0xff000000) | ((x >> 24)&0x000000ff))
-  #endif
+//  #ifndef swab32
+//  #define swab32(x) (((x << 8)&0x00ff0000)|((x >> 8)&0x0000ff00)|((x << 24)&0xff000000) | ((x >> 24)&0x000000ff))
+//  #endif
 
   typedef  struct _ANGLE_PACK_V002_Struct_ // The structure sequence is not adjustable, you can add V0.02 at the back
   {
@@ -63,8 +63,6 @@ private:
     unsigned  short Run_time16; // Run time, resolution ms
   }ANGLE_PACK_V002;
 
-  unsigned char gServos = SERVO_NUMER_MAX;  // Number of servos
-  unsigned char gServo_list[SERVO_NUMER_MAX / 8]; // Servo list, bit representation
   unsigned char Usart3_Rx_Buf[120];
   unsigned char Usart3_Rx_Buf_count=0;
   volatile ANGLE_PACK_V002 gsSave_Angle;    // Save the angle, the same angle will not be issued
