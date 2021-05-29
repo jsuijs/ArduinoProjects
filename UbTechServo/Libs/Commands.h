@@ -409,7 +409,7 @@ void HexDump(const void *Data, int Length)
 }
 
 /*=====================================================================
- HexDump :
+ HexDump -
  ---------------------------------------------------------------------*/
 // Parameters:
 //    Data   - data to be dumped

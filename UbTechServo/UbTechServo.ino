@@ -153,6 +153,22 @@ void Execute(int Param[])
    if (Command.Match("Flag",           2)) Flags.Set(Param[0], Param[1]);
    if (Command.Match("FlagDump",       0)) Flags.Dump();
 
-   if (Command.Match("Servo",          2)) UbtTest(Param[0], Param[1]);
+   if (Command.Match("ServoSetTurn",   3)) UbtServo.setServoTurn(Param[0], Param[1], Param[3]);  // id dir speed
+   if (Command.Match("ServoSetStif",   2)) UbtServo.setServoStiffness(Param[0], Param[1]);
+   if (Command.Match("ServoSetAngle",  2)) UbtServo.setServoAngle(Param[0], Param[1], 200);
+   if (Command.Match("ServoSetAngle",  3)) UbtServo.setServoAngle(Param[0], Param[1], Param[2]);
+
+   if (Command.Match("ServoSetStop",   1)) UbtServo.setServoStop(Param[0]);
+
+   if (Command.Match("ServoGetId",     0)) CSerial.printf("R: %d\n", (int)UbtServo.getServoId());          // get lowest ID
+   if (Command.Match("ServoGetId",     1)) CSerial.printf("R: %d\n", (int)UbtServo.getServoId(Param[0]));
+
+   if (Command.Match("ServoSetId",     2)) CSerial.printf("R: %d\n", (int)UbtServo.setServoId(Param[0], Param[1]));
+
+   if (Command.Match("ServoRead",      0)) UbtServo.ServoRead();          // list all
+
+   if (Command.Match("ServoReadAngle",    1)) printf("Hoek: %d\n", UbtServo.readServoAngleNPD(Param[0]));
+   if (Command.Match("ServoReadAnglePD",  1)) printf("Hoek: %d\n", UbtServo.readServoAnglePD(Param[0]));
+
 }
 

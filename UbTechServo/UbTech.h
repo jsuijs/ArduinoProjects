@@ -18,34 +18,33 @@ void UbtSetup()
    SetModePB6(GPIO_MODE_INPUT);
 }
 
-void UbtTest(int P1, int P2)
+
+int UbtWrite(unsigned char *TxBuf, int TxLength, unsigned char *RxBuf, int RxLength)
 {
-//   SetModePB6(GPIO_MODE_AF_PP);  // set pin to output (push-pull)
+   while (Serial1.available()) Serial1.read(); // flush RX data
 
-//   USART1->DR = 'U';
-//   while ((USART1->SR & UART_FLAG_TC) == 0); // wait for char to be sent
-
-//   SetModePB6(GPIO_MODE_INPUT); // set pin to input (high-impedance)
-
-   UbtServo.setServoAngle(P1, P2, 200); // servo 1, to 45 graden in 200 ms(?)
-
-   delay(100);
-//   CSerial.printf("getServoId %d\n", (int)UbtServo.getServoId());
-   CSerial.printf("readServoAnglePD %d\n", UbtServo.readServoAnglePD(P1));
-
-
-   UbtServo.check_servo();
-
-}
-
-void UbtWrite(unsigned char *buf, int length)
-{
    SetModePB6(GPIO_MODE_AF_PP);  // set pin to output (push-pull)
 
-   for (int i=0; i<length; i++) {
-      USART1->DR = buf[i];
+   for (int i=0; i<TxLength; i++) {
+      USART1->DR = TxBuf[i];
       while ((USART1->SR & UART_FLAG_TC) == 0); // wait for char to be sent
    }
 
    SetModePB6(GPIO_MODE_INPUT); // set pin to input (high-impedance)
+
+   CSerial.print("***msg tx\n");
+   HexDump(TxBuf, TxLength);
+
+//   for (int i=0; i<TxLength; i++) Serial1.read(); // flush transmitted data
+
+   delayMicroseconds(90 * RxLength);    // wait for response
+
+   delay(10);
+
+   int Nr = Serial1.readBytes( RxBuf, RxLength);
+
+   CSerial.printf("msg rx %d vs %d\n", Nr, RxLength);
+   HexDump(RxBuf, RxLength);
+
+   return Nr;
 }

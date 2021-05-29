@@ -2,7 +2,9 @@
 #include <Arduino.h>
 extern HardwareSerial Serial2;
 #define Serial Serial2
-void UbtWrite(unsigned char *buf, int length);
+#define CSerial Serial2
+//void UbtWrite(unsigned char *buf, int length);
+int UbtWrite(unsigned char *TxBuf, int TxLength, unsigned char *RxBuf, int RxLength);
 
 
 #include"SemiduplexSerial.h"
@@ -57,14 +59,18 @@ Retry_Servo:
 
   temp = (Usart3_Rx_Ack_Len+ 5) ;  //接收消息长度,用于计算接收时间,1个字节 0.087ms,预留5个空闲,10%误差
 //3  Serial3.begin(115200);  //uart3
-  Serial1.setTimeout(temp*87*110/100 / 400);  //设置超时ms
+
+//5  Serial1.setTimeout(temp*87*110/100 / 400);  //设置超时ms
 
 //3  Serial2.begin(115200);  //设置波特率
 //3  Serial2.write(buf,len + 1);  //发送消息
 //3  Serial2.end();  //关闭串口2,否则会影响接收消息
-  UbtWrite(buf, len+1);
 
-  tRet = Serial1.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10); //接收应答
+//  UbtWrite(buf, len+1);
+  tRet = UbtWrite(buf, len+1,  Usart3_Rx_Buf, Usart3_Rx_Ack_Len+len);
+
+
+//  tRet = Serial1.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10); //接收应答
 
 //3  Serial3.end();  //关闭串口3,否则会影响接收消息
 
@@ -111,64 +117,55 @@ Retry_Servo:
   return tRet;
 }
 
-unsigned char SemiduplexSerial::ubtServoIdProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data){
-  unsigned char tRet = 0;
-  unsigned char tCnt = 0;
-  unsigned long temp = 2; //2ms 发完
-  unsigned char buf[10];
-  unsigned char len = 9; //9+1
-  unsigned char Usart3_Rx_Ack_Len=0;
-  memset((void *)Usart3_Rx_Buf,0,sizeof(Usart3_Rx_Buf));
-  memset((void *)buf,0,sizeof(buf));
-  buf[0] = Head;  //填充协议头
-  buf[1] = swab8(Head);
-  buf[2] = ServoNO; //舵机好
-  buf[3] = CMD;
-  memcpy((void *)&buf[4],(void *)Data,4);
-  buf[len - 1] = Cheak_Sum( (len - 3),(u8*)&buf[2]);
-  buf[len] = 0xED;
+//-----------------------------------------------------------------------------
+// SemiduplexSerial::ubtServoIdProtocol -
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+unsigned char SemiduplexSerial::ubtServoIdProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data)
+   {
+      unsigned char tRet = 0;
+      unsigned char buf[10];
+      unsigned char len = 9; //9+1
+      unsigned char Usart3_Rx_Ack_Len = 11;
 
-  Usart3_Rx_Ack_Len = 11;
+      // clear buffers
+      memset((void *)Usart3_Rx_Buf,0,sizeof(Usart3_Rx_Buf));
+      memset((void *)buf,0,sizeof(buf));
 
-  temp = (Usart3_Rx_Ack_Len+ 5) ;  //接收消息长度,用于计算接收时间,1个字节 0.087ms,预留5个空闲,10%误差
-//3  Serial3.begin(115200);  //uart3
+      // setup tx message
+      buf[0] = Head;  //填充协议头
+      buf[1] = swab8(Head);
+      buf[2] = ServoNO; //舵机好
+      buf[3] = CMD;
+      memcpy((void *)&buf[4],(void *)Data,4);
+      buf[len - 1] = Cheak_Sum( (len - 3),(u8*)&buf[2]);
+      buf[len] = 0xED;
 
-   while (Serial1.available()) Serial1.read(); // flush data
+      tRet = UbtWrite(buf, len+1, Usart3_Rx_Buf, Usart3_Rx_Ack_Len+len);
 
-  Serial1.setTimeout(temp*87*110/100 / 400);  // Set timeout ms
+      Serial.printf("ubtServoIdProtocol %d\n", len);
+      Serial.println(Cheak_Sum( (len - 3),(u8*)&Usart3_Rx_Buf[len+3]),HEX);
+      Serial.println(Usart3_Rx_Buf[len+9],HEX);
 
-//3  Serial2.begin(115200);  //设置波特率
-//3  Serial2.write(buf,len + 1);  //发送消息
-//3  Serial2.end();  //关闭串口2,否则会影响接收消息
-  UbtWrite(buf, len+1);
-
-
-  tRet = Serial1.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+len); // Receive reply
-//  Serial1.end();  //关闭串口3,否则会影响接收消息
-
-   for(int i=0;i<Usart3_Rx_Ack_Len+len;i++){
-    Serial.print(Usart3_Rx_Buf[i],HEX);
-    Serial.print(",");
+      if (  Usart3_Rx_Buf[len+1]==0xFC &&
+            Usart3_Rx_Buf[len+2]==0xCF &&
+            Usart3_Rx_Buf[len+4]==0xAA &&
+            Cheak_Sum( (len - 3),(u8*)&Usart3_Rx_Buf[len+3]) == Usart3_Rx_Buf[len+9]) {
+         // servo responded, return ID from answer
+         tRet=Usart3_Rx_Buf[len+3];
+      } else if(  Usart3_Rx_Buf[len+1]==0 &&
+                  Usart3_Rx_Buf[len+2]==0 &&
+                  Usart3_Rx_Buf[len+3]==0 &&
+                  Usart3_Rx_Buf[len+4]==0 &&
+                  Usart3_Rx_Buf[len+9]==0) {
+         // no response
+         tRet=0;
+      } else {
+         tRet=ServoNO+0xec;
+         CSerial.printf("error?!? %d\n", tRet);
+      }
+      return tRet;
    }
-   Serial.println();
-   Serial.println(Cheak_Sum( (len - 3),(u8*)&Usart3_Rx_Buf[len+3]),HEX);
-   Serial.println(Usart3_Rx_Buf[len+9],HEX);
-
-  if(Usart3_Rx_Buf[len+1]==0xFC && Usart3_Rx_Buf[len+2]==0xCF && Usart3_Rx_Buf[len+4]==0xAA && Cheak_Sum( (len - 3),(u8*)&Usart3_Rx_Buf[len+3])==Usart3_Rx_Buf[len+9]){
-       tRet=Usart3_Rx_Buf[len+3];
-
-  }
-  else if(Usart3_Rx_Buf[len+1]==0 && Usart3_Rx_Buf[len+2]==0 && Usart3_Rx_Buf[len+3]==0 && Usart3_Rx_Buf[len+4]==0 && Usart3_Rx_Buf[len+9]==0){
-    tRet=0;
-
-  }
-
-  else{
-    tRet=ServoNO+0xec;
-
-  }
-  return tRet;
-}
 
 void SemiduplexSerial::ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data){
   unsigned char tRet = 0;
@@ -184,7 +181,7 @@ void SemiduplexSerial::ubtServoActionProtocol(unsigned char Head,unsigned char S
   buf[len - 1] = Cheak_Sum( (len - 3),(u8*)&buf[2]);
   buf[len] = 0xED;
 
-  UbtWrite(buf, len+1);
+  UbtWrite(buf, len+1,  Usart3_Rx_Buf, 0);
 }
 
 unsigned short SemiduplexSerial::ubtServoProtocol1M(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data){
@@ -218,7 +215,7 @@ Retry_Servo:
 
   temp = (Usart3_Rx_Ack_Len+ 5) ;  //接收消息长度,用于计算接收时间,1个字节 0.087ms,预留5个空闲,10%误差
 //3  Serial3.begin(1000000);  //uart3
-//3  Serial3.setTimeout(temp*87*110/100 / 400);  //设置超时ms
+//5  Serial3.setTimeout(temp*87*110/100 / 400);  //设置超时ms
 //3  Serial2.begin(1000000);  //设置波特率
 //3  Serial2.write(buf,len + 1);  //发送消息
 //3  Serial2.end();  //关闭串口2,否则会影响接收消息
@@ -336,15 +333,18 @@ Retry_Servo:
 
   temp = (Usart3_Rx_Ack_Len + 5) ;  // The length of the received message, used to calculate the receiving time, 1 byte 0.087ms, reserved 5 free, 10% error
 //3  Serial3.begin(115200);  //uart3
-  Serial1.setTimeout(temp*87*110/100 / 400);  // Set timeout ms
+//5  Serial1.setTimeout(temp*87*110/100 / 400);  // Set timeout ms
 
 
 //  Serial2.begin(115200);  // Set the baud rate
 //  Serial2.write(buf,length + 1);  // Send a message
 //  Serial2.end();  // Close the serial port 2, otherwise it will affect the reception of messages
-   UbtWrite(buf, length+1);
 
-  tRet = Serial1.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10); //Receive reply
+//   UbtWrite(buf, length+1);
+//  tRet = Serial1.readBytes( Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10); //Receive reply
+
+  tRet = UbtWrite(buf, length+1,  Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10);
+
 //3  Serial3.end();  // Close serial port 3, otherwise it will affect receiving messages
 
 //  if(tRet > RXD_OFFSET) // Print return message

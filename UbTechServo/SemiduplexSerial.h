@@ -12,9 +12,9 @@ class SemiduplexSerial
 {
 public:
 
-    unsigned short ubtServoProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
-    unsigned char ubtServoIdProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
-    void ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
+    unsigned short   ubtServoProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
+    unsigned char    ubtServoIdProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
+    void             ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
     unsigned short ubtServoProtocol1M(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
 
     unsigned char Cheak_Sum(unsigned char len, unsigned char *buf);
@@ -22,7 +22,7 @@ public:
 
     signed long TXD(unsigned char len,unsigned char choice,unsigned char * Data);
 
-    unsigned char Get_Servo_list(unsigned char Servo_NO);  //检查舵机存在不 ? 正不正常
+    unsigned char Get_Servo_list(unsigned char Servo_NO);  //Check whether the servo exists? Is it normal?
     void Set_Servo_list(unsigned char Servo_NO);
     void Clr_Servo_list(unsigned char Servo_NO);
     void check_servo();
@@ -32,14 +32,14 @@ public:
 private:
   #define tems(val) (val*87*110/100/400)
   #define POLY    (0x1070U << 3)
-  #define SERVO_NUMER_MAX    16  //支持的最多舵机
-  //置位变量的某位
+  #define SERVO_NUMER_MAX    16  // Most servos supported
+  // Set a bit of the variable
   #define  Clr_bit(val, bit)  (val &= ~(1 << bit))
-  //清位变量的某位
+  // Clear a bit of a variable
   #define  Set_bit(val, bit)  (val |= (1 << bit))
-  //读变量的某位
-  #define RXD_OFFSET  10  //接收消息偏移
-  //#define  Read_bit(val, bit)  (val & (1 << bit))  //结果拿去计算有问题
+  // Read a bit of a variable
+  #define RXD_OFFSET  10  //Receive message offset
+  //#define  Read_bit(val, bit)  (val & (1 << bit))  // The result is a problem with the calculation
   #define  Read_bit(val, bit)  ((val & (1 << bit)) ? 1 : 0)
   #ifndef NULL
   #define  NULL         ((void *) 0)
@@ -57,17 +57,17 @@ private:
   #define swab32(x) (((x << 8)&0x00ff0000)|((x >> 8)&0x0000ff00)|((x << 24)&0xff000000) | ((x >> 24)&0x000000ff))
   #endif
 
-  typedef  struct _ANGLE_PACK_V002_Struct_ //结构顺序不可调,可在后面添加 V0.02
+  typedef  struct _ANGLE_PACK_V002_Struct_ // The structure sequence is not adjustable, you can add V0.02 at the back
   {
-    unsigned  char Angle[SERVO_NUMER_MAX];  //1~20舵机角度
-    unsigned  short Run_time16; //运行时间,分辨率ms
+    unsigned  char Angle[SERVO_NUMER_MAX];  //1~20 Steering gear angle
+    unsigned  short Run_time16; // Run time, resolution ms
   }ANGLE_PACK_V002;
 
-  unsigned char gServos = SERVO_NUMER_MAX;  //舵机个数
-  unsigned char gServo_list[SERVO_NUMER_MAX / 8]; //舵机列表,位表示
+  unsigned char gServos = SERVO_NUMER_MAX;  // Number of servos
+  unsigned char gServo_list[SERVO_NUMER_MAX / 8]; // Servo list, bit representation
   unsigned char Usart3_Rx_Buf[120];
   unsigned char Usart3_Rx_Buf_count=0;
-  volatile ANGLE_PACK_V002 gsSave_Angle;    //存角度,相同角度不再下发
+  volatile ANGLE_PACK_V002 gsSave_Angle;    // Save the angle, the same angle will not be issued
 
 };
 #endif
