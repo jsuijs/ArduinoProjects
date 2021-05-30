@@ -26,45 +26,13 @@ public:
     unsigned char redvalue,greenvalue,bluevalue=0;
 
 private:
-  #define tems(val) (val*87*110/100/400)
-  #define POLY    (0x1070U << 3)
-  #define SERVO_NUMER_MAX    16  // Most servos supported
-  // Set a bit of the variable
-  #define  Clr_bit(val, bit)  (val &= ~(1 << bit))
-  // Clear a bit of a variable
-  #define  Set_bit(val, bit)  (val |= (1 << bit))
-  // Read a bit of a variable
-  #define RXD_OFFSET  10  //Receive message offset
-  //#define  Read_bit(val, bit)  (val & (1 << bit))  // The result is a problem with the calculation
-  #define  Read_bit(val, bit)  ((val & (1 << bit)) ? 1 : 0)
-  #ifndef NULL
-  #define  NULL         ((void *) 0)
-  #endif
+   #ifndef swap8
+   #define swap8(x) ((x&0x0f) << 4 | (x&0xf0) >> 4)
+   #endif
 
-//  #ifndef swab16
-//  #define swab16(x) ((x&0x00ff) << 8 | (x&0xff00) >> 8)
-//  #endif
-
-  #ifndef swab8
-  #define swab8(x) ((x&0x0f) << 4 | (x&0xf0) >> 4)
-  #endif
-
-//  #ifndef swab32
-//  #define swab32(x) (((x << 8)&0x00ff0000)|((x >> 8)&0x0000ff00)|((x << 24)&0xff000000) | ((x >> 24)&0x000000ff))
-//  #endif
-
+   #define RXD_OFFSET  10  // Receive message offset
+   
    void TrxSetup(unsigned char Head,unsigned char ServoNO,unsigned char CMD);
-
-    typedef  struct _ANGLE_PACK_V002_Struct_ // The structure sequence is not adjustable, you can add V0.02 at the back
-  {
-    unsigned  char Angle[SERVO_NUMER_MAX];  //1~20 Steering gear angle
-    unsigned  short Run_time16; // Run time, resolution ms
-  }ANGLE_PACK_V002;
-  
-  unsigned char Usart3_Rx_Buf[120];
-  unsigned char Usart3_Rx_Buf_count=0;
-  volatile ANGLE_PACK_V002 gsSave_Angle;    // Save the angle, the same angle will not be issued
-  
 
    unsigned char RxBuf[120];
    unsigned char TxBuf[10];

@@ -35,7 +35,7 @@ void SemiduplexSerial::TrxSetup(unsigned char Head,unsigned char ServoNO,unsigne
       memset((void *)TxBuf,0,sizeof(TxBuf));
       // setup tx message
       TxBuf[0] = Head;  //填充协议头
-      TxBuf[1] = ((Head & 0x0f) << 4) | ((Head & 0xf0) >> 4); // swap8(Head);
+      TxBuf[1] = swap8(Head);
       TxBuf[2] = ServoNO; //舵机好
       TxBuf[3] = CMD;
    }
@@ -198,12 +198,12 @@ unsigned long SemiduplexSerial::TXD(unsigned char Head,unsigned char ServoNO,uns
 
   unsigned char Usart3_Rx_Ack_Len=0;
 
-  memset((void *)Usart3_Rx_Buf,0,sizeof(Usart3_Rx_Buf));
+  memset((void *)RxBuf,0,sizeof(RxBuf));
   memset((void *)buf,0,sizeof(buf));
   Usart3_Rx_Ack_Len = 17; // Reply message length
 
   buf[0] = Head;  // Fill the protocol header
-  buf[1] = swab8(Head);
+  buf[1] = swap8(Head);
   if(Head >= 0xFA)
   {
     buf[2] = ServoNO; //Good steering gear
@@ -218,34 +218,15 @@ unsigned long SemiduplexSerial::TXD(unsigned char Head,unsigned char ServoNO,uns
   buf[length - 1] = CheckSum( (length - 3),(u8*)&buf[2]);
   buf[length ] = 0xED;
 
-
   if(Head == 0xFA)
   {
-    if(CMD == 1 )
-    {
-      if(ServoNO == 0)
-      {
-        // There is a problem with this sentence -memset- does not support double-byte padding
-        //memset((void *)&gsSave_Angle,0xFF,sizeof(gsSave_Angle));  // Save all angles
-        //memset((void *)&gsSave_Angle,Data,sizeof(gsSave_Angle));  // Save all angles
-        memset((void *)&gsSave_Angle,Data[0],sizeof(gsSave_Angle)); // Save all angles
-      }
-      else
-      {
-        if(Data[0] == gsSave_Angle.Angle[ServoNO - 1])  return  0;  // Do not send, return directly
-        else
-        {
-          gsSave_Angle.Angle[ServoNO - 1] = Data[0];  // Save a single angle, it may be double-byte angle in the future
-        }
-      }
-      Usart3_Rx_Ack_Len = 1;  //1,4 The command only responds with one byte
-    }
-    else if( CMD == 4)  Usart3_Rx_Ack_Len = 1;  //1,4 The command only responds with one byte
+    if (CMD == 1) Usart3_Rx_Ack_Len = 1;  //1,4 The command only responds with one byte
+    if (CMD == 4) Usart3_Rx_Ack_Len = 1;  //1,4 The command only responds with one byte
   }
 
 Retry_Servo:
 
-  tRet = UbtWrite(buf, length+1,  Usart3_Rx_Buf, Usart3_Rx_Ack_Len+10);
+  tRet = UbtWrite(buf, length+1,  RxBuf, Usart3_Rx_Ack_Len+10);
 
   if(tRet == 0) // No message received
   {
@@ -257,47 +238,47 @@ Retry_Servo:
   }
   else  // Message received
   {
-  Usart3_Rx_Buf_count = tRet;
+  RxBuf_count = tRet;
     tRet = 0;
     if(Head == 0xFA)
     {
       if( (CMD == 1) || (CMD == 4) )
       {
-        if( (Usart3_Rx_Buf[RXD_OFFSET + 1] == 0xAA + ServoNO) )
+        if( (RxBuf[RXD_OFFSET + 1] == 0xAA + ServoNO) )
         {
           tRet = ServoNO;
         }
       }
       else if(CMD == 2 | CMD==3 |CMD==8)
       {
-        if( (Usart3_Rx_Buf[RXD_OFFSET + 3] == 0xAA) && (Usart3_Rx_Buf[RXD_OFFSET + 2] == ServoNO) )
+        if( (RxBuf[RXD_OFFSET + 3] == 0xAA) && (RxBuf[RXD_OFFSET + 2] == ServoNO) )
         {
-          tRet = Usart3_Rx_Buf[10+6] << 8;
-          tRet |= Usart3_Rx_Buf[10+7] << 0;
+          tRet = RxBuf[10+6] << 8;
+          tRet |= RxBuf[10+7] << 0;
         }
       }
 
 
       else if(CMD == 0xCD )
       {
-        if( (Usart3_Rx_Buf[RXD_OFFSET + 5] == ServoNO) )
+        if( (RxBuf[RXD_OFFSET + 5] == ServoNO) )
         {
-          tRet = Usart3_Rx_Buf[RXD_OFFSET + 5];
+          tRet = RxBuf[RXD_OFFSET + 5];
         }
       }
       else if(CMD == 0xD2 )
       {
-        if( (Usart3_Rx_Buf[RXD_OFFSET + 3] == 0xAA) && (Usart3_Rx_Buf[RXD_OFFSET + 2] == ServoNO) )
+        if( (RxBuf[RXD_OFFSET + 3] == 0xAA) && (RxBuf[RXD_OFFSET + 2] == ServoNO) )
         {
           tRet = 1;
         }
       }
       else if(CMD == 0xD4 )
       {
-        if( (Usart3_Rx_Buf[RXD_OFFSET + 3] == 0xAA) && (Usart3_Rx_Buf[RXD_OFFSET + 2] == ServoNO) )
+        if( (RxBuf[RXD_OFFSET + 3] == 0xAA) && (RxBuf[RXD_OFFSET + 2] == ServoNO) )
         {
-          tRet = Usart3_Rx_Buf[RXD_OFFSET + 6] << 8;
-          tRet |= Usart3_Rx_Buf[RXD_OFFSET + 7] << 0;
+          tRet = RxBuf[RXD_OFFSET + 6] << 8;
+          tRet |= RxBuf[RXD_OFFSET + 7] << 0;
         }
       }
     }
@@ -305,55 +286,15 @@ Retry_Servo:
     {
       if(CMD == 1 )
       {
-        if((Usart3_Rx_Buf[RXD_OFFSET + 3] == 0xAA)  ) // Change the version number to read ID
+        if((RxBuf[RXD_OFFSET + 3] == 0xAA)  ) // Change the version number to read ID
         {
-          tRet=Usart3_Rx_Buf[RXD_OFFSET + 2];
+          tRet=RxBuf[RXD_OFFSET + 2];
 
         }
       }
     }
-    else if( (Head < 0xFA) && (Head > 0x00) && (Usart3_Rx_Buf[length + 4] == CMD) ) // sensor
-    {
-      if(CMD == 0x02 )
-      {
-        tRet = Usart3_Rx_Buf[length + 5] - 0xAA;
-      }
-      else if (CMD == 0x03)
-      {
-        tRet = Usart3_Rx_Buf[length + 5] - 0xAA;
-      }
-      else if (CMD == 0x04)
-      {
-        //Serial.println(Usart3_Rx_Buf[length + 3]);
-        if(Usart3_Rx_Buf[length + 3] == 7)
-          tRet = ((Usart3_Rx_Buf[length + 5] - 0xAA) << 8) + Usart3_Rx_Buf[length + 6];
-        else   if(Usart3_Rx_Buf[length + 3] == 8)
-          tRet = (Usart3_Rx_Buf[length + 6] << 8) + Usart3_Rx_Buf[length + 7];
-        else   if(Usart3_Rx_Buf[length + 3] == 9)
-          tRet = (Usart3_Rx_Buf[length + 7] << 8) + Usart3_Rx_Buf[length + 8];
-        else   if(Usart3_Rx_Buf[length + 3] == 17)
-        {
 
-             tRet = ((Usart3_Rx_Buf[length + 5] - 0xAA) << 8) + Usart3_Rx_Buf[length + 6];
-             redvalue = Usart3_Rx_Buf[length + 6];
-             greenvalue = Usart3_Rx_Buf[length + 7];
-             bluevalue = Usart3_Rx_Buf[length + 8];
-        }
 
-      }
-      else if((CMD==0x06) | (CMD==0x07))
-      {
-        if(Usart3_Rx_Buf[length + 4]==7 && Usart3_Rx_Buf[length + 5]-0xAA!=Data[0]){
-           tRet =254;
-        }
-        else if(Usart3_Rx_Buf[length + 4]==7&& Usart3_Rx_Buf[length + 5]-0xAA==Data[0]){
-          tRet = Usart3_Rx_Buf[length + 5] - 0xAA;
-        }
-        else{
-          tRet = 0;
-        }
-      }
-    }
   }
   return tRet;
 }
