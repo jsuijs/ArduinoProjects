@@ -4,9 +4,6 @@
 #define SEMIDUPLEXSERIAL_h
 
 #include <Arduino.h>
-#define VISION_SERIAL_BUFSIZE     256
-#define VISION_SOFTSERIAL_RXPIN   64
-#define VISION_SOFTSERIAL_TXPIN   63
 
 class SemiduplexSerial
 {
@@ -14,10 +11,9 @@ public:
 
     unsigned short   ubtServoProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
     unsigned char    ubtServoIdProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
-    void             ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
-    unsigned short ubtServoProtocol1M(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
+   unsigned char  ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
 
-    unsigned char Cheak_Sum(unsigned char len, unsigned char *buf);
+   unsigned char  CheckSum(unsigned char len, unsigned char *buf);
     unsigned long TXD(unsigned char Head,unsigned char ServoNO,unsigned char len,unsigned char CMD,unsigned char * Data);
 
     signed long TXD(unsigned char len,unsigned char choice,unsigned char * Data);
@@ -57,15 +53,21 @@ private:
 //  #define swab32(x) (((x << 8)&0x00ff0000)|((x >> 8)&0x0000ff00)|((x << 24)&0xff000000) | ((x >> 24)&0x000000ff))
 //  #endif
 
-  typedef  struct _ANGLE_PACK_V002_Struct_ // The structure sequence is not adjustable, you can add V0.02 at the back
+   void TrxSetup(unsigned char Head,unsigned char ServoNO,unsigned char CMD);
+
+    typedef  struct _ANGLE_PACK_V002_Struct_ // The structure sequence is not adjustable, you can add V0.02 at the back
   {
     unsigned  char Angle[SERVO_NUMER_MAX];  //1~20 Steering gear angle
     unsigned  short Run_time16; // Run time, resolution ms
   }ANGLE_PACK_V002;
-
+  
   unsigned char Usart3_Rx_Buf[120];
   unsigned char Usart3_Rx_Buf_count=0;
   volatile ANGLE_PACK_V002 gsSave_Angle;    // Save the angle, the same angle will not be issued
+  
 
+   unsigned char RxBuf[120];
+   unsigned char TxBuf[10];
+   unsigned char RxBuf_count=0;
 };
 #endif

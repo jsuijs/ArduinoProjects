@@ -32,7 +32,7 @@ unsigned char uKitServo::getServoId()
          if (getServoId(testid) == testid) return testid;
       }
       return 0;
-}
+   }
 
 //-----------------------------------------------------------------------------
 // uKitServo::getServoId - check if servo with Id exists
@@ -41,17 +41,14 @@ unsigned char uKitServo::getServoId()
 //-----------------------------------------------------------------------------
 unsigned char uKitServo::getServoId(char id)
    {
-  unsigned char tRet = 0;
+      unsigned char tRet = 0;
       unsigned char buf[4] = {0, 0, 0, 0};
 
-    //tRet=TXD(0xFC,id,4,0x01,buf);
-    tRet=ubtServoIdProtocol(0xFC,id,0x01,buf);
-    delay(2);
+      //tRet=TXD(0xFC,id,4,0x01,buf);
+      tRet=ubtServoIdProtocol(0xFC,id,0x01,buf);
+      delay(2);
 
-
-
-
-    return tRet;
+      return tRet;
 }
 
 // Servo geeft antwoord maar geen actie??
@@ -257,23 +254,3 @@ void uKitServo::ServoRead(){
 //      delay(times[i]);
 //    }
 //}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

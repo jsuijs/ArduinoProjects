@@ -39,8 +39,6 @@ public:
 
    void playMotion(unsigned char *id,signed char **action,int *times);
 
-
-
    int read_num=1;
 };
 
