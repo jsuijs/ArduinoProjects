@@ -69,40 +69,33 @@ void uKitServo::setServoTurn(unsigned char id,int dir, int speed)
       ubtServoActionProtocol(0xFA,id,0x01,buf);
    }
 
-//void uKitServo::setServoTurns(unsigned char *id,int *dir, int *speed){
-//  for(int i=0;i<sizeof(id)/sizeof(id[0]);i++){
-//    setServoTurn(id[i],dir[i],speed[i]);
-//  }
-//}
-
 //-----------------------------------------------------------------------------
 // uKitServo::setServoAngle -
 //-----------------------------------------------------------------------------
 // id represents the number of the servo,
 // angle represents the angle (angle range -118°~118°),
-// time represents the time required for rotation (time range: 300~5000)
+// time represents the time in ms required for rotation (time range: 300~5000)
 //-----------------------------------------------------------------------------
-void uKitServo::setServoAngle(unsigned char id,int angle,int times){
-  unsigned char buf[4];
-  buf[0]=angle+120;
-  buf[1]=(times/20);
-  buf[2]=((times/20) & 0xFF00) >> 8;
-  buf[3]=(times/20) & 0x00FF;
+void uKitServo::setServoAngle(unsigned char id, int angle, int times)
+   {
+      unsigned char buf[4];
+      int TimeMs = times / 20;
+      buf[0]= angle + 120;
+      buf[1]= TimeMs;
+      buf[2]= (TimeMs & 0xFF00) >> 8;
+      buf[3]= TimeMs  & 0x00FF;
 
-  ubtServoActionProtocol(0xFA,id,0x01,buf);
-}
+      ubtServoActionProtocol(0xFA,id,0x01,buf);
+   }
 
-//void uKitServo::setServoAngles(unsigned char *id,int *angle,int times){
-//    for(unsigned int i=0;i<sizeof(id)/sizeof(id[0]);i++){
-//      setServoAngle(id[i],angle[i],times);
-//    }
-//    delay(times);
-//}
-
-void uKitServo::setServoStop(unsigned char id){
-  unsigned char buf[4]={0xFF,0,0,0};
-  ubtServoProtocol(0xFA,id,0x01,buf);
-}
+//-----------------------------------------------------------------------------
+// uKitServo::setServoStop - disable servo (Power-down, free-running)
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+void uKitServo::setServoStop(unsigned char id)
+   {
+      setServoStiffness(id, 255);
+   }
 
 //-----------------------------------------------------------------------------
 // uKitServo::setServoStiffness - ?? 255 = off?  only 4 bytes (of 8) defined...
@@ -110,14 +103,14 @@ void uKitServo::setServoStop(unsigned char id){
 // stiffness inequal to 255 enables power and might turn servo to a
 // new position...
 //-----------------------------------------------------------------------------
-void uKitServo::setServoStiffness(unsigned char id,unsigned char stiffness){
-  unsigned char tData[8];  // JS: was 4!!
+void uKitServo::setServoStiffness(unsigned char id, unsigned char stiffness){
+  unsigned char tData[4];
   tData[0]=stiffness;
   tData[1]=0;
   tData[2]=0;
   tData[3]=0;
 
-  TXD(0xFA,id,8,0x01,tData ); // param3 must be 8 -> send 8 bytes.
+  ubtServoActionProtocol(0xFA,id,0x01,tData);
 }
 
 //-----------------------------------------------------------------------------
@@ -143,35 +136,6 @@ int uKitServo::readServoAnglePD(unsigned char id)
       return 0;
    }
 
-//void uKitServo::readServoAnglePD_M(unsigned char *read_id,char num)//舵机回读
-//{
-//    int setServoAngle=0;
-//    Serial.println("");
-//    Serial.print("----------");
-//    Serial.print(read_num++);
-//    Serial.println("----------");
-//    Serial.print("{");
-//    for(int i=0;i<num;i++)
-//    {
-//        setServoAngle=readServoAnglePD(read_id[i]);
-//        delay(20);
-//        if(setServoAngle>=-118 && setServoAngle<=118)
-//        {
-//          Serial.print(setServoAngle);
-//          if(i<num-1)
-//            Serial.print(",");
-//        }
-//
-//        else
-//        {
-//          Serial.print("id-");
-//          Serial.print(setServoAngle);
-//          Serial.print(":Out of range,");
-//        }
-//    }
-//      Serial.print("}");
-//}
-
 // uKitServo::readServoAngleNPD - no response from servo...
 int uKitServo::readServoAngleNPD(unsigned char id){ // Single servo read back (read back without power down)
   int tCmd=0,tRet=0;
@@ -196,35 +160,6 @@ int uKitServo::readServoAngleNPD(unsigned char id){ // Single servo read back (r
 
 }
 
-//void uKitServo::readServoAngleNPD_M(unsigned char *read_id,char num)//舵机回读
-//{
-//    int setServoAngle=0;
-//    Serial.println("");
-//    Serial.print("----------");
-//    Serial.print(read_num++);
-//    Serial.println("----------");
-//    Serial.print("{");
-//    for(int i=0;i<num;i++)
-//    {
-//        setServoAngle=readServoAngleNPD(read_id[i]);
-//        delay(20);
-//        if(setServoAngle>=-118 && setServoAngle<=118)
-//        {
-//          Serial.print(setServoAngle);
-//          if(i<num-1)
-//            Serial.print(",");
-//        }
-//
-//        else
-//        {
-//          Serial.print("id-");
-//          Serial.print(setServoAngle);
-//          Serial.print(":Out of range,");
-//        }
-//    }
-//      Serial.print("}");
-//}
-
 void uKitServo::ServoRead(){
   unsigned char t=0;
   static unsigned char ServoId[18]={0},ServoIdRead[18]={0};
@@ -245,12 +180,3 @@ void uKitServo::ServoRead(){
   }
   Serial.println("dit nog herstellen?!?"); //  readServoAnglePD_M(ServoIdRead,t);
 }
-
-//void uKitServo::playMotion(unsigned char *id,signed char **action,int *times){
-//  for(int i=0;i<sizeof(action)/sizeof(action[0]);i++){
-//    for(int t=0;t<sizeof(id)/sizeof(id[0]);t++){
-//      setServoAngle(id[t],action[i][t],500);
-//    }
-//      delay(times[i]);
-//    }
-//}

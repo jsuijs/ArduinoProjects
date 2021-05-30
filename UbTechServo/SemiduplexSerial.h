@@ -11,12 +11,9 @@ public:
 
     unsigned short   ubtServoProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
     unsigned char    ubtServoIdProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
-   unsigned char  ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
+    unsigned char  ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data);
 
-   unsigned char  CheckSum(unsigned char len, unsigned char *buf);
-    unsigned long TXD(unsigned char Head,unsigned char ServoNO,unsigned char len,unsigned char CMD,unsigned char * Data);
-
-    signed long TXD(unsigned char len,unsigned char choice,unsigned char * Data);
+    unsigned char  CheckSum(unsigned char len, unsigned char *buf);
 
     unsigned char Get_Servo_list(unsigned char Servo_NO);  //Check whether the servo exists? Is it normal?
     void Set_Servo_list(unsigned char Servo_NO);
@@ -31,7 +28,7 @@ private:
    #endif
 
    #define RXD_OFFSET  10  // Receive message offset
-   
+
    void TrxSetup(unsigned char Head,unsigned char ServoNO,unsigned char CMD);
 
    unsigned char RxBuf[120];

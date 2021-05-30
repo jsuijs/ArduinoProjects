@@ -6,11 +6,7 @@ extern HardwareSerial Serial2;
 
 int UbtWrite(unsigned char *TxBuf, int TxLength, unsigned char *RxBuf, int RxLength);
 
-
 #include"SemiduplexSerial.h"
-
-#define u8 unsigned char
-
 
 /**@brief EN:JIMU Servo checksum/CN:JIMU舵机校验
  *
@@ -44,27 +40,27 @@ unsigned short SemiduplexSerial::ubtServoProtocol(unsigned char Head,unsigned ch
       unsigned short tRet = 0;
       unsigned char tCnt = 0;
       unsigned char len = 9; //9+1
-      unsigned char Usart3_Rx_Ack_Len=0;
+      unsigned char RxAckLen=0;
 
       TrxSetup(Head, ServoNO, CMD);
 
       memcpy((void *)&TxBuf[4],(void *)Data,4);
-      TxBuf[len - 1] = CheckSum( (len - 3),(u8*)&TxBuf[2]);
+      TxBuf[len - 1] = CheckSum(len-3, &TxBuf[2]);
       TxBuf[len] = 0xED;
 
       if (((CMD == 0x01) && (Head != 0xFC)) || (CMD == 0x04) || (CMD == 0xCD)) {
-         Usart3_Rx_Ack_Len = 1;  //1,4命令只应答一个字节
+         RxAckLen = 1;  //1,4命令只应答一个字节
       } else if((CMD == 0x02) || (CMD==0x03)) {
-         Usart3_Rx_Ack_Len = 8;
+         RxAckLen = 8;
       } else if ((CMD == 0x01) && (Head == 0xFC)) {
-         Usart3_Rx_Ack_Len = 4;
+         RxAckLen = 4;
       }
 
 Retry_Servo:
 
    //3  Serial2.write(buf,len + 1);  //发送消息
-   //3  tRet = Serial1.readBytes( RxBuf, Usart3_Rx_Ack_Len+10); //接收应答
-   tRet = UbtWrite(TxBuf, len+1,  RxBuf, Usart3_Rx_Ack_Len+10);
+   //3  tRet = Serial1.readBytes( RxBuf, RxAckLen+10); //接收应答
+   tRet = UbtWrite(TxBuf, len+1,  RxBuf, RxAckLen+10);
 
    if (tRet == 0) { // No message received
 
@@ -130,24 +126,24 @@ unsigned char SemiduplexSerial::ubtServoIdProtocol(unsigned char Head,unsigned c
       unsigned char tRet = 0;
 //      unsigned char buf[10];
       unsigned char len = 9; //9+1
-      unsigned char Usart3_Rx_Ack_Len = 11;
+      unsigned char RxAckLen = 11;
 
       TrxSetup(Head, ServoNO, CMD);
 
       memcpy((void *)&TxBuf[4], (void *)Data, 4);
-      TxBuf[len - 1] = CheckSum( (len - 3),(u8*)&TxBuf[2]);
+      TxBuf[len - 1] = CheckSum(len-3, &TxBuf[2]);
       TxBuf[len] = 0xED;
 
-      tRet = UbtWrite(TxBuf, len+1, RxBuf, Usart3_Rx_Ack_Len+len);
+      tRet = UbtWrite(TxBuf, len+1, RxBuf, RxAckLen+len);
 
       Serial.printf("ubtServoIdProtocol %d\n", len);
-      Serial.println(CheckSum( (len - 3),(u8*)&RxBuf[len+3]),HEX);
+      Serial.println(CheckSum(len-3, &RxBuf[len+3]),HEX);
       Serial.println(RxBuf[len+9],HEX);
 
       if (  RxBuf[len+1]==0xFC &&
             RxBuf[len+2]==0xCF &&
             RxBuf[len+4]==0xAA &&
-            CheckSum( (len - 3),(u8*)&RxBuf[len+3]) == RxBuf[len+9]) {
+            CheckSum(len-3, &RxBuf[len+3]) == RxBuf[len+9]) {
          // servo responded, return ID from answer
          tRet=RxBuf[len+3];
       } else if(  RxBuf[len+1]==0 &&
@@ -169,7 +165,7 @@ unsigned char SemiduplexSerial::ubtServoIdProtocol(unsigned char Head,unsigned c
 unsigned char SemiduplexSerial::ubtServoActionProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data)
    {
       const unsigned char len = 9; //9+1
-      const unsigned char Usart3_Rx_Ack_Len=1;
+      const unsigned char RxAckLen=1;
 
       TrxSetup(Head, ServoNO, CMD);
 
@@ -177,130 +173,5 @@ unsigned char SemiduplexSerial::ubtServoActionProtocol(unsigned char Head,unsign
       TxBuf[len - 1] = CheckSum(len - 3, &TxBuf[2]);
       TxBuf[len] = 0xED;
 
-      return UbtWrite(TxBuf, len+1,  RxBuf, Usart3_Rx_Ack_Len+len+1);
+      return UbtWrite(TxBuf, len+1,  RxBuf, RxAckLen+len+1);
    }
-
-/**@brief EN:Communication protocol sending and receiving functions/CN:通讯协议发送和接受函数.
- *
- * @param[in] Head EN:Protocol head/CN:协议头.
- * @param[in] ServoNO EN:Servo id/CN:舵机号.
- * @param[in] len EN:data length/CN:数据长度.
- * @param[in] CMD EN:CMD code/CN:CMD码.
- * @param[in] Data EN:data buffer/CN:数据缓冲区.
- *
- * @returns tRet EN:Accept return value/CN:接受返回值.
- */
-unsigned long SemiduplexSerial::TXD(unsigned char Head,unsigned char ServoNO,unsigned char len,unsigned char CMD,unsigned char * Data){
-  unsigned long tRet = 0;
-  unsigned char tCnt = 0;
-  unsigned char buf[60];
-  unsigned char length = 9; //9+1
-
-  unsigned char Usart3_Rx_Ack_Len=0;
-
-  memset((void *)RxBuf,0,sizeof(RxBuf));
-  memset((void *)buf,0,sizeof(buf));
-  Usart3_Rx_Ack_Len = 17; // Reply message length
-
-  buf[0] = Head;  // Fill the protocol header
-  buf[1] = swap8(Head);
-  if(Head >= 0xFA)
-  {
-    buf[2] = ServoNO; //Good steering gear
-  }
-  else if(Head > 0x00)  // Variable Length Agreement
-  {
-    length = len + 5; // length
-    buf[2] = length;
-  }
-  buf[3] = CMD;
-  memcpy((void *)&buf[4],(void *)Data,len);
-  buf[length - 1] = CheckSum( (length - 3),(u8*)&buf[2]);
-  buf[length ] = 0xED;
-
-  if(Head == 0xFA)
-  {
-    if (CMD == 1) Usart3_Rx_Ack_Len = 1;  //1,4 The command only responds with one byte
-    if (CMD == 4) Usart3_Rx_Ack_Len = 1;  //1,4 The command only responds with one byte
-  }
-
-Retry_Servo:
-
-  tRet = UbtWrite(buf, length+1,  RxBuf, Usart3_Rx_Ack_Len+10);
-
-  if(tRet == 0) // No message received
-  {
-    if( tCnt < 2)
-    {
-      tCnt ++;  // Retry
-      goto  Retry_Servo;
-    }
-  }
-  else  // Message received
-  {
-  RxBuf_count = tRet;
-    tRet = 0;
-    if(Head == 0xFA)
-    {
-      if( (CMD == 1) || (CMD == 4) )
-      {
-        if( (RxBuf[RXD_OFFSET + 1] == 0xAA + ServoNO) )
-        {
-          tRet = ServoNO;
-        }
-      }
-      else if(CMD == 2 | CMD==3 |CMD==8)
-      {
-        if( (RxBuf[RXD_OFFSET + 3] == 0xAA) && (RxBuf[RXD_OFFSET + 2] == ServoNO) )
-        {
-          tRet = RxBuf[10+6] << 8;
-          tRet |= RxBuf[10+7] << 0;
-        }
-      }
-
-
-      else if(CMD == 0xCD )
-      {
-        if( (RxBuf[RXD_OFFSET + 5] == ServoNO) )
-        {
-          tRet = RxBuf[RXD_OFFSET + 5];
-        }
-      }
-      else if(CMD == 0xD2 )
-      {
-        if( (RxBuf[RXD_OFFSET + 3] == 0xAA) && (RxBuf[RXD_OFFSET + 2] == ServoNO) )
-        {
-          tRet = 1;
-        }
-      }
-      else if(CMD == 0xD4 )
-      {
-        if( (RxBuf[RXD_OFFSET + 3] == 0xAA) && (RxBuf[RXD_OFFSET + 2] == ServoNO) )
-        {
-          tRet = RxBuf[RXD_OFFSET + 6] << 8;
-          tRet |= RxBuf[RXD_OFFSET + 7] << 0;
-        }
-      }
-    }
-    else if(Head == 0xFC)
-    {
-      if(CMD == 1 )
-      {
-        if((RxBuf[RXD_OFFSET + 3] == 0xAA)  ) // Change the version number to read ID
-        {
-          tRet=RxBuf[RXD_OFFSET + 2];
-
-        }
-      }
-    }
-
-
-  }
-  return tRet;
-}
-
-
-
-
-
-
