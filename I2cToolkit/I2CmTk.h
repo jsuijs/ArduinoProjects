@@ -9,60 +9,17 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //-----------------------------------------------------------------------------
 
-int I2cDebug = 0;
+int I2cDebug = 1; // 1 is normal operation (verbose), 2 = some debug, 3 = all debug
+                  // 0 is silent (no output from commands => not toolkit/interactive mode...)
 
 //-----------------------------------------------------------------------------
-// CGet - Get single char command from serial & drive Toolkit command line
+// I2cError - print message, slave ID and a code to support debugging...
 //-----------------------------------------------------------------------------
-// The single char commands are intended to support the workshop excercises.
-// Using this function automatically enables the I2CmTK core and demo commands.
-//-----------------------------------------------------------------------------
-char CGet()
-{
-  static bool First = true;
-
-  if (First) {
-    First = false;
-    Serial.setTimeout(50);
-  }
-
-  if( Serial.available() > 0)
-  {
-    int r = Command.GetLine(Serial.read());
-    if (r == 0) return 0;  // still reading line
-
-    if (r < 0) {
-      printf("Cmd parse err %d\n", r);
-      Command.Clear();
-      return 0;
-    }
-
-    //Command.Print() ;
-
-    char ch = Command.Execute();
-    Command.Clear();
-
-    if (ch > 2) return ch;
-  }
-  return 0;
-}
-
-//-----------------------------------------------------------------------------
-// PrintTkMsg - print I2C Master Toolkit message
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-void PrintTkMsg()
-{
-  MyPrintf("\nI2CmTk\n");
-  MyPrintf("Gecompileerd: %s %s\n", __DATE__, __TIME__ );
-}
-
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
+// @ErrorNr: use the source...
 //-----------------------------------------------------------------------------
 void I2cError(int Slave, int ErrorNr)
 {
-  MyPrintf("I2c error %d, slave: 0x%02x\n", ErrorNr, Slave);
+  MyPrintf("Slave 0x%02x I2C error (%d).\n", Slave, ErrorNr);
 }
 
 //-----------------------------------------------------------------------------
@@ -72,13 +29,12 @@ void I2cError(int Slave, int ErrorNr)
 //-----------------------------------------------------------------------------
 bool AddressProbe(int I2cSlaveAddress)
 {
-  Wire.requestFrom(I2cSlaveAddress, 1);    // request 2 bytes from slave device #112
+  Wire.requestFrom(I2cSlaveAddress, 1);    // request 2 bytes from slave device
 
-  if (Wire.available() != 0) {
-    Wire.read();
-    return true;  // slave present
-  }
-  return false;  // not present
+  if (Wire.available() == 0)   return false;  // slave not present
+
+  Wire.read();  // flush buffer
+  return true;  // slave present
 }
 
 //-----------------------------------------------------------------------------
@@ -90,12 +46,12 @@ void BusScan()
   for (int I2cSlaveAddress = 0; I2cSlaveAddress<127; I2cSlaveAddress++) {
 
     if (AddressProbe(I2cSlaveAddress)) {
-      printf("%2x", I2cSlaveAddress);
+      MyPrintf("%2x ", I2cSlaveAddress);
     }
-    printf(".");
-    if ((I2cSlaveAddress & 0x01F) == 0x1F) printf("\n");
+    MyPrintf(".");
+    if ((I2cSlaveAddress & 0x01F) == 0x1F) MyPrintf("\n");
   }
-  printf("\n");
+  MyPrintf("\n");
 }
 
 //-----------------------------------------------------------------------------
@@ -107,13 +63,13 @@ bool I2cSendReceive(byte I2cSlaveAddress, byte TxCount, byte RxCount, const byte
 {
   byte r;
 
-  if (I2cDebug) {
-    printf("I2cSendReceive(%d %d %d)\n", I2cSlaveAddress, TxCount, RxCount);
+  if (I2cDebug > 1) {
+    MyPrintf("I2cSendReceive(%d %d %d)\n", I2cSlaveAddress, TxCount, RxCount);
   }
 
   if (TxCount > 0) {
-    if (I2cDebug > 1) {
-      printf("TxBuf:\n");
+    if (I2cDebug > 2) {
+      MyPrintf("TxBuf:\n");
       HexDump(TxBuffer, TxCount);
     }
 
@@ -136,8 +92,8 @@ bool I2cSendReceive(byte I2cSlaveAddress, byte TxCount, byte RxCount, const byte
     for (int i=0; i<RxCount; i++) {
       RxBuffer[i] = Wire.read();
     }
-    if (I2cDebug > 1) {
-      printf("RxBuf:\n");
+    if (I2cDebug > 2) {
+      MyPrintf("RxBuf:\n");
       HexDump(RxBuffer, RxCount);
     }
   }
@@ -150,32 +106,28 @@ bool I2cSendReceive(byte I2cSlaveAddress, byte TxCount, byte RxCount, const byte
 //-----------------------------------------------------------------------------
 static void _SetupRegisterAddress(byte *TxBuffer, int RegBytes, int RegAddr)
 {
-  // Setup Address
-  switch(RegBytes) {
-  case 0 :
-    {
-      // no address
+   // Setup Address
+   switch(RegBytes) {
+      case 0 : { // no address
+      }
       break;
-    }
-  case 1 :
-    {
-      // byte address
-      TxBuffer[0] = RegAddr;
+
+      case 1 : { // byte address
+         TxBuffer[0] = RegAddr;
+       }
       break;
-    }
-  case 2 :
-    {
-      // word address
-      TxBuffer[0] = RegAddr >> 8;
-      TxBuffer[1] = RegAddr;
+
+      case 2 : { // word address
+         TxBuffer[0] = RegAddr >> 8;
+         TxBuffer[1] = RegAddr;
+      }
       break;
-    }
-  default :
-    {
-      I2cError(0,947);
+
+      default : { // invalid register size
+         I2cError(0,100);
+      }
       break;
-    }
-  }
+   }
 }
 
 //-----------------------------------------------------------------------------
@@ -183,51 +135,53 @@ static void _SetupRegisterAddress(byte *TxBuffer, int RegBytes, int RegAddr)
 //-----------------------------------------------------------------------------
 // RegBytes:  nr of bytes, 0, 1 or 2, in RegAddr
 // DataBytes: nr of bytes, 1 or 2, to be read
+// Return:  data read (single value).
+//          On error, -1 is returned. Note: -1 can also mean all went well and
+//          the slave actual returned this value.
 //-----------------------------------------------------------------------------
-static void I2cReader(int Slave, int RegBytes, int DataBytes, int RegAddr)
-{
-  unsigned int Data;
-  bool r;
-  byte TxBuffer[2], RxBuffer[2];
+static int I2cReader(int Slave, int RegBytes, int DataBytes, int RegAddr)
+{  unsigned int Data;
+   bool r;
+   byte TxBuffer[2], RxBuffer[2];
 
-  _SetupRegisterAddress(TxBuffer, RegBytes, RegAddr);
-  r = I2cSendReceive(Slave, RegBytes, DataBytes, TxBuffer, RxBuffer);
+   _SetupRegisterAddress(TxBuffer, RegBytes, RegAddr);
+   r = I2cSendReceive(Slave, RegBytes, DataBytes, TxBuffer, RxBuffer);
 
-  if (!r) {
-    I2cError(Slave, 1210);
-    return;
-  }
+   if (!r) {
+      I2cError(Slave, 201);
+      return -1;
+   }
 
-  // process data.
-  switch(DataBytes) {
-  case 1 :
-    {
-      // byte data
-      Data = RxBuffer[0];
+   // process data.
+   switch(DataBytes) {
+      case 1 : { // byte data
+         Data = RxBuffer[0];
+      }
       break;
-    }
-  case 2 :
-    {
-      // word data
-      Data = RxBuffer[0];
-      Data *= 256;
-      Data += RxBuffer[1];
-      break;
-    }
-  default :
-    {
-      I2cError(Slave, 927);
-      return;
-    }
-  }
 
-  printf("I2c read 0x%02x, ", Slave);
-  if (RegBytes != 0) {
-    printf("Reg: %d (0x%02x), Data: %u (0x%x)\n", RegAddr, RegAddr, Data, Data);
-  }
-  else {
-    printf("Data: %u\n", Data);
-  }
+      case 2 : { // word data
+         Data = RxBuffer[0];
+         Data *= 256;
+         Data += RxBuffer[1];
+      }
+      break;
+
+      default : {
+         I2cError(Slave, 202);
+         return -1;
+      }
+      break;
+   }
+
+   if (I2cDebug != 0) {  // not in silent mode
+      MyPrintf("I2c read 0x%02x, ", Slave);
+      if (RegBytes != 0) {
+         MyPrintf("Reg: %d (0x%02x), Data: %u (0x%x)\n", RegAddr, RegAddr, Data, Data);
+      } else {
+         MyPrintf("Data: %u\n", Data);
+      }
+   }
+   return (int) Data;
 }
 
 //-----------------------------------------------------------------------------
@@ -237,48 +191,45 @@ static void I2cReader(int Slave, int RegBytes, int DataBytes, int RegAddr)
 // DataBytes: nr of bytes, 1 or 2, to write
 //-----------------------------------------------------------------------------
 static void I2cWriter( int Slave, int RegBytes, int DataBytes, int RegAddr, int Data)
-{
-  bool r = 1;
-  byte TxBuffer[4];
+{  bool r = 1;
+   byte TxBuffer[4];
 
-  _SetupRegisterAddress(TxBuffer, RegBytes, RegAddr);
+   _SetupRegisterAddress(TxBuffer, RegBytes, RegAddr);
 
-  // Setup data.
-  switch(DataBytes) {
-  case 1 :
-    {
-      // byte data
-      TxBuffer[RegBytes+0] = Data;
+   // Setup data.
+   switch(DataBytes) {
+      case 1 : { // byte data
+         TxBuffer[RegBytes+0] = Data;
+      }
       break;
-    }
-  case 2 :
-    {
-      // word data
-      TxBuffer[RegBytes+0] = Data/256;
-      TxBuffer[RegBytes+1] = Data;
+
+      case 2 : { // word data
+         TxBuffer[RegBytes+0] = Data/256;
+         TxBuffer[RegBytes+1] = Data;
+      }
       break;
-    }
-  default :
-    {
-      I2cError(Slave, 929);
+
+      default : {
+        I2cError(Slave, 301);
+      }
       break;
-    }
   }
 
   r = I2cSendReceive(Slave, RegBytes+DataBytes, 0, TxBuffer, NULL);
 
   if (!r) {
-    I2cError(Slave, 1214);
+    I2cError(Slave, 302);
     return;
   }
 
-  printf("Slave: 0x%02x, ", Slave);
-  if (RegBytes != 0) {
-    printf("register %d (0x%02x) set to %d (0x%02x)\n", RegAddr, RegAddr, Data, Data);
-  }
-  else {
-    printf("Data: %d (0x%02x)\n", Data, Data);
-  }
+   if (I2cDebug != 0) {  // not in silent mode
+      MyPrintf("Slave: 0x%02x, ", Slave);
+      if (RegBytes != 0) {
+         MyPrintf("register %d (0x%02x) set to %d (0x%02x)\n", RegAddr, RegAddr, Data, Data);
+      } else {
+         MyPrintf("Data: %d (0x%02x)\n", Data, Data);
+      }
+   }
 }
 
 //-----------------------------------------------------------------------------
@@ -293,44 +244,46 @@ static void I2cReader2(int Slave, int RegBytes, int DataBytes, int RegAddr)
   byte RxBuffer[34];
 
   if (DataBytes > 32) {
-    printf("#bytes limited to 32!\n");
+    MyPrintf("#bytes limited to 32!\n");
     DataBytes = 32;
   }
 
   _SetupRegisterAddress(TxBuffer, RegBytes, RegAddr);
 
   if (!I2cSendReceive(Slave, RegBytes, DataBytes, TxBuffer, RxBuffer)) {
-    printf("I2cRead() - comms err\n");
+    MyPrintf("I2cRead() - comms err\n");
     return;
   }
   HexDump(RxBuffer, DataBytes);
 }
 
 //-----------------------------------------------------------------------------
-// Execute - execute commando
+// TkExecute - execute toolkit commands
 //-----------------------------------------------------------------------------
 // Called via CmdTakt() when a command is received from the serial port.
 //-----------------------------------------------------------------------------
-void Execute(int Param[])
+void TkExecute(int Param[])
 {
-   if (Command.Match("?",         0)) Command.Help("I2cToolkit command parser.");
+   if (Command.Match("?",     0)) Command.Help("I2cToolkit.");
 
-   if (Command.Match("debug",     1)) I2cDebug = Param[0];
-   if (Command.Match("scan",      0)) BusScan();
+   if (Command.Match("debug", 1)) I2cDebug = Param[0];
+   if (Command.Match("scan",  0)) BusScan();
 
-   if (Command.Match("rnb",       1)) I2cReader(Param[0], 0, 1,       0);
-   if (Command.Match("rnw",       1)) I2cReader(Param[0], 0, 2,       0);
-   if (Command.Match("rbb",       2)) I2cReader(Param[0], 1, 1, Param[1]);
-   if (Command.Match("rbw",       2)) I2cReader(Param[0], 1, 2, Param[1]);
-   if (Command.Match("rwb",       2)) I2cReader(Param[0], 2, 1, Param[1]);
-   if (Command.Match("rww",       2)) I2cReader(Param[0], 2, 2, Param[1]);
-   if (Command.Match("wnb",       2)) I2cWriter(Param[0], 0, 1,       0, Param[1]);
-   if (Command.Match("wnw",       2)) I2cWriter(Param[0], 0, 2,       0, Param[1]);
-   if (Command.Match("wbb",       3)) I2cWriter(Param[0], 1, 1, Param[1], Param[2]);
-   if (Command.Match("wbw",       3)) I2cWriter(Param[0], 1, 2, Param[1], Param[2]);
-   if (Command.Match("wwb",       3)) I2cWriter(Param[0], 2, 1, Param[1], Param[2]);
-   if (Command.Match("www",       3)) I2cWriter(Param[0], 2, 2, Param[1], Param[2]);
-   if (Command.Match("rn",        2)) I2cReader2(Param[0], 0, Param[1],       0);
-   if (Command.Match("rb",        3)) I2cReader2(Param[0], 1, Param[2], Param[1]);
-   if (Command.Match("rw",        3)) I2cReader2(Param[0], 2, Param[2], Param[1]);
+   if (Command.Match("rnb",   1)) I2cReader(Param[0], 0, 1,       0);
+   if (Command.Match("rnw",   1)) I2cReader(Param[0], 0, 2,       0);
+   if (Command.Match("rbb",   2)) I2cReader(Param[0], 1, 1, Param[1]);
+   if (Command.Match("rbw",   2)) I2cReader(Param[0], 1, 2, Param[1]);
+   if (Command.Match("rwb",   2)) I2cReader(Param[0], 2, 1, Param[1]);
+   if (Command.Match("rww",   2)) I2cReader(Param[0], 2, 2, Param[1]);
+
+   if (Command.Match("wnb",   2)) I2cWriter(Param[0], 0, 1,       0,  Param[1]);
+   if (Command.Match("wnw",   2)) I2cWriter(Param[0], 0, 2,       0,  Param[1]);
+   if (Command.Match("wbb",   3)) I2cWriter(Param[0], 1, 1, Param[1], Param[2]);
+   if (Command.Match("wbw",   3)) I2cWriter(Param[0], 1, 2, Param[1], Param[2]);
+   if (Command.Match("wwb",   3)) I2cWriter(Param[0], 2, 1, Param[1], Param[2]);
+   if (Command.Match("www",   3)) I2cWriter(Param[0], 2, 2, Param[1], Param[2]);
+
+   if (Command.Match("rn",    2)) I2cReader2(Param[0], 0, Param[1],       0);
+   if (Command.Match("rb",    3)) I2cReader2(Param[0], 1, Param[2], Param[1]);
+   if (Command.Match("rw",    3)) I2cReader2(Param[0], 2, Param[2], Param[1]);
 }

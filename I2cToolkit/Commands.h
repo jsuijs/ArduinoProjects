@@ -13,11 +13,8 @@
 #define CMD_BUFFER_SIZE 64          // Command with parameters.
 #define CMD_MAX_NR_PARAMETERS 9
 
-void MyCommands(int Number[]);
 void HexDump(const void *Data, int Length);
 void HexDump( const void *Data, unsigned int Length, unsigned int Offset);
-int  my_putc(char c, FILE *t);
-int  FreeRam();
 
 /*=====================================================================
  TCommand :
@@ -295,10 +292,10 @@ bool TCommand::Match(const char *Keyword, byte NrParams)
       }
 
       //printf("Match Cmd: '%s' Keyword: '%s', NrParams: %d\n", Cmd, Keyword, NrParams);
-      if (LastError == 0)         return false;  // this command is already executed.
-      if (strcasecmp(Cmd, Keyword))   return false;  // not this command.
-      LastError = 1;  // command recognised, but (maybe) incorrect nr of params
-      if (ParamCount != NrParams) return false;  // incorrect nr of params
+      if (LastError == 0)           return false;  // this command is already executed
+      if (strcasecmp(Cmd, Keyword)) return false;  // not this command
+      LastError = 1;                               // command recognised, but (maybe) incorrect nr of params
+      if (ParamCount != NrParams)   return false;  // incorrect # of params (there might be an other entry with correct #)
       LastError = 0;  // success
       return true;    // execute command
    }
@@ -454,15 +451,6 @@ void HexDump( const void *Data, unsigned int Length, unsigned int Offset)
    }
 }
 #endif
-
-//-----------------------------------------------------------------------------
-// Bcd - convert decimal value to bcd.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-byte Bcd(byte Decimal)
-{
-   return (Decimal / 10) * 16 + (Decimal % 10);
-}
 
 #endif   // MAIN
 #endif   // COMMANDS_H
