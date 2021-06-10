@@ -31,6 +31,7 @@ extern "C" void putch(unsigned char c)
 #include "Commands.h"
 void TkExecute(int Param[]);
 TCommand Command(TkExecute);
+#define I2CMTK_INTERACTIVE
 #include "I2CmTk.h"
 
 //-----------------------------------------------------------------------------

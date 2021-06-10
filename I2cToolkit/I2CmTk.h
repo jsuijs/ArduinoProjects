@@ -1,6 +1,5 @@
 //-----------------------------------------------------------------------------
 // I2CmTk.ino - I2C Master Toolkit (c) 2016-2021 Karel Dupain & Joep Suijs
-// (version with demo code stripped)
 //-----------------------------------------------------------------------------
 // Deze toolkit is ontwikkeld voor de Workshop 'Arduino & I2C'.
 //
@@ -9,9 +8,66 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //-----------------------------------------------------------------------------
 
-int I2cDebug = 1; // 1 is normal operation (verbose), 2 = some debug, 3 = all debug
-                  // 0 is silent (no output from commands => not toolkit/interactive mode...)
+#ifdef I2CMTK_INTERACTIVE
+int I2cDebug = 1; // 1 is toolkit operation (verbose), 2 = some debug, 3 = all debug
+#else
+int I2cDebug = 0; // 0 is silent (no output from commands => not toolkit/interactive mode...)
+#endif
 
+#ifndef HEXDUMP_DEFINED
+#define HEXDUMP_DEFINED
+/*=====================================================================
+ HexDump -
+ ---------------------------------------------------------------------*/
+// Parameters:
+//    Data   - data to be dumped
+//    Length - nr of bytes to be dumped
+//    Offset - offset of address (from 0), displayed at the start of each line.
+//-----------------------------------------------------------------------------
+void HexDump( const void *Data, unsigned int Length, unsigned int Offset)
+{
+   unsigned char *data  = (unsigned char *)Data;
+   unsigned int Track1  = 0;
+   unsigned int Track2  = 0;
+   // HEX part
+   for (unsigned int Index=0; Index < Length; Index = Index+16) {
+      MyPrintf( "%04x: ", Offset + Index );
+      for(unsigned int j=0; j<16; j++) {
+         if (Track1 < Length ) {
+            MyPrintf( "%02x", data[ Index+j ] );
+         } else {
+            MyPrintf( "  " );
+         }
+         MyPrintf( " " );
+         Track1++;
+      }
+      MyPrintf( " "  );
+      // ASCII part
+      for(unsigned int j=0; j<16; j++) {
+         if (Track2 < Length) {
+            if (data[Index+j] < 32 ) {
+               MyPrintf( "." );
+            } else {
+               if (data[Index+j] < 127) MyPrintf("%c", data[Index+j]);
+               else MyPrintf(".");
+            }
+         }
+         else MyPrintf( " " );
+         Track2++;
+      }
+      MyPrintf( "\n" );
+   }
+}
+//-----------------------------------------------------------------------------
+// HexDump - Dump Data in hex format
+//-----------------------------------------------------------------------------
+// No offset, so address displayed at the start of each line starts at 0.
+//-----------------------------------------------------------------------------
+void HexDump(const void *Data, int Length)
+{
+   HexDump(Data, Length, 0);
+}
+#endif
 //-----------------------------------------------------------------------------
 // I2cError - print message, slave ID and a code to support debugging...
 //-----------------------------------------------------------------------------
@@ -233,6 +289,17 @@ static void I2cWriter( int Slave, int RegBytes, int DataBytes, int RegAddr, int 
 }
 
 //-----------------------------------------------------------------------------
+// I2cRead - read byte, word or dword
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+int I2cRead(int I2cSlaveAddress, int RegAddr)
+{
+   int Size = RegAddr >> 8;
+   if (Size == 0) return -1;   // undefined size
+   return I2cReader(I2cSlaveAddress, 1, Size, RegAddr & 0xFF);
+}
+#ifdef I2CMTK_INTERACTIVE
+//-----------------------------------------------------------------------------
 // I2cReader2 - support function for READ commands - Read & dump arbitrary nr of bytes
 //-----------------------------------------------------------------------------
 // RegBytes:  nr of bytes, 0, 1 or 2, in RegAddr
@@ -287,3 +354,4 @@ void TkExecute(int Param[])
    if (Command.Match("rb",    3)) I2cReader2(Param[0], 1, Param[2], Param[1]);
    if (Command.Match("rw",    3)) I2cReader2(Param[0], 2, Param[2], Param[1]);
 }
+#endif
