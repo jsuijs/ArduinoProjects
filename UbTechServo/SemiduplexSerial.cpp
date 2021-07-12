@@ -1,9 +1,12 @@
 
 #include <Arduino.h>
+
+// console serial port
 extern HardwareSerial Serial2;
 #define Serial Serial2
 #define CSerial Serial2
 
+// my write routine....
 int UbtWrite(unsigned char *TxBuf, int TxLength, unsigned char *RxBuf, int RxLength);
 
 #include"SemiduplexSerial.h"
@@ -35,6 +38,7 @@ void SemiduplexSerial::TrxSetup(unsigned char Head,unsigned char ServoNO,unsigne
       TxBuf[2] = ServoNO; //舵机好
       TxBuf[3] = CMD;
    }
+
 unsigned short SemiduplexSerial::ubtServoProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data)
    {
       unsigned short tRet = 0;
@@ -124,7 +128,6 @@ Retry_Servo:
 unsigned char SemiduplexSerial::ubtServoIdProtocol(unsigned char Head,unsigned char ServoNO,unsigned char CMD,unsigned char * Data)
    {
       unsigned char tRet = 0;
-//      unsigned char buf[10];
       unsigned char len = 9; //9+1
       unsigned char RxAckLen = 11;
 
@@ -136,9 +139,9 @@ unsigned char SemiduplexSerial::ubtServoIdProtocol(unsigned char Head,unsigned c
 
       tRet = UbtWrite(TxBuf, len+1, RxBuf, RxAckLen+len);
 
-      Serial.printf("ubtServoIdProtocol %d\n", len);
-      Serial.println(CheckSum(len-3, &RxBuf[len+3]),HEX);
-      Serial.println(RxBuf[len+9],HEX);
+      //Serial.printf("ubtServoIdProtocol %d\n", len);
+      //Serial.println(CheckSum(len-3, &RxBuf[len+3]),HEX);
+      //Serial.println(RxBuf[len+9],HEX);
 
       if (  RxBuf[len+1]==0xFC &&
             RxBuf[len+2]==0xCF &&

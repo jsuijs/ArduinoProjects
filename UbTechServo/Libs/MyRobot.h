@@ -197,9 +197,4 @@ void I2cClearBus(int PinSda, int PinScl);
 // ProgrammaTakt.cpp
 void ProgrammaTakt();
 
-// RcDispatch.cpp
-void RcDispatch(int &RcData);
-int  PfKeyGet();
-void PfKeySet(int InKey);
-
 #endif

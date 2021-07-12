@@ -21,17 +21,18 @@ unsigned char uKitServo::setServoId(char oldid,char newid)
    }
 
 //-----------------------------------------------------------------------------
-// uKitServo::getServoId - Return Id of lowest servo
+// uKitServo::Scan - print ID's of available servo's
 //-----------------------------------------------------------------------------
 // Return: Id on success, 0 on failure
 //-----------------------------------------------------------------------------
-unsigned char uKitServo::getServoId()
+void uKitServo::Scan()
    {
       for (int testid=1; testid<=18; testid++) {
 
-         if (getServoId(testid) == testid) return testid;
+         if (getServoId(testid) == testid) {
+            Serial.printf("Servo #: %d\n", testid);
+         }
       }
-      return 0;
    }
 
 //-----------------------------------------------------------------------------
@@ -136,7 +137,7 @@ int uKitServo::readServoAnglePD(unsigned char id)
       return 0;
    }
 
-// uKitServo::readServoAngleNPD - no response from servo...
+// uKitServo::readServoAngleNPD - no response from old servo, works with new one...
 int uKitServo::readServoAngleNPD(unsigned char id){ // Single servo read back (read back without power down)
   int tCmd=0,tRet=0;
   unsigned char aa[4]={0,0,0,0};
@@ -153,30 +154,31 @@ int uKitServo::readServoAngleNPD(unsigned char id){ // Single servo read back (r
 
   delay(5);
 
-  if(tCmd>=-120 && tCmd<=120)
-    return tCmd;
-  else
-    return 0;
-
+   if(tCmd>=-120 && tCmd<=120)
+      return tCmd;
+   else
+      return 0;
 }
 
-void uKitServo::ServoRead(){
-  unsigned char t=0;
-  static unsigned char ServoId[18]={0},ServoIdRead[18]={0};
-  static int start=0;
-  if(start==0){
-  Serial.print("Servo currently read ID：{");
-  for(int i=1;i<=18;i++){
-    ServoId[i]=getServoId(i);
-    if(ServoId[i]!=0){
-      ServoIdRead[t]=ServoId[i];
-      Serial.print(ServoIdRead[t]);
-      Serial.print(",");
-      t++;
-    }
-  }
-  Serial.println("}");
-  start=1;
-  }
-  Serial.println("dit nog herstellen?!?"); //  readServoAnglePD_M(ServoIdRead,t);
-}
+void uKitServo::ServoRead()
+   {  unsigned char t=0;
+      static unsigned char ServoId[19]={0};           // 1..18, [0] is unused.
+      static unsigned char ServoIdRead[19]={0};
+      static int start=0;
+
+      if (start == 0) {
+         Serial.print("Servo currently read ID：{");
+         for (int i=1;i<=18;i++) {
+            ServoId[i]=getServoId(i);
+            if (ServoId[i]!=0) {
+               ServoIdRead[t]=ServoId[i];
+               Serial.print(ServoIdRead[t]);
+               Serial.print(",");
+               t++;
+            }
+         }
+         Serial.println("}");
+         start=1;
+      }
+      Serial.println("dit nog herstellen?!?"); //  readServoAnglePD_M(ServoIdRead,t);
+   }

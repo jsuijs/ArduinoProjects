@@ -7,45 +7,20 @@
 #include "Libs/MyRobot.h"           // super-include
 #include "Project.h"
 
-// include code
-
 void Execute();   // prototype
 
 // global instances
 TCommand       Command(Execute);
 
-HardwareSerial Serial2 (PA3, PA2);
+HardwareSerial Serial2 (PA3, PA2);  // console serial
 
-#include"uKitServo.h"
+#include "UbTechSerial.h"           // UBT serial port (hardcoded to Serial1)
+#include "uKitServo.h"              // servo class
 uKitServo UbtServo;
-#include "UbTech.h"
 
 //                   SDA   SCL
 TwoWire        Wire2(PB11, PB10);
 TFlags         Flags(32);
-
-
-//---------------------------------------------------------------------------------------
-// RC5 stuff start
-#include "Libs/RC5.h"
-
-int Rc5Data;  // Set on receive, feel free to set to zero when done.
-int IR_PIN = PB4;
-//int RC5_INTERRUPT = 0;
-RC5 rc5(IR_PIN);
-
-void Rc5Isr()
-{ static unsigned int   PrevMessage;
-  unsigned int Message;
-  if (rc5.read(&Message)) {
-    if (Message != PrevMessage) {
-      Rc5Data     = Message;
-      PrevMessage = Message;
-    }
-  }
-}
-// Rc5 stuff done (but do not forget to attach Rc5Isr() to IrPin).
-//---------------------------------------------------------------------------------------
 
 // Create buzzer instance & call it each ms from SYSTICK
 TBuzzer Buzzer(BUZZER_PIN);
@@ -63,9 +38,6 @@ void setup() {
    UbtSetup();
 
    pinMode(PB1, OUTPUT);    //Led op Maple-Mini
-
-   // Link PinChange interrupt to RC5 reader.
-   attachInterrupt(IR_PIN, Rc5Isr, CHANGE);
 
    I2cClearBus(PB11, PB10); // SDA, SCL
    LppWire.begin();
@@ -96,8 +68,6 @@ void loop() {
    static int NextMainTakt;
    static int NextSecTakt;
    static int PrevMs;
-
-   RcDispatch(Rc5Data);
 
    // eens per miliseconde
    int ms = millis();
@@ -147,8 +117,6 @@ void Execute(int Param[])
 {
    if (Command.Match("?",                 0)) Command.Help("ArduinoPlanck command parser.");
 
-   if (Command.Match("PfKey",             1)) PfKeySet(Param[0]);
-
    if (Command.Match("Flag",              1)) CSerial.printf("Flag %d is %d\n", Param[0], Flags.IsSet(Param[0]));
    if (Command.Match("Flag",              2)) Flags.Set(Param[0], Param[1]);
    if (Command.Match("FlagDump",          0)) Flags.Dump();
@@ -160,7 +128,8 @@ void Execute(int Param[])
 
    if (Command.Match("ServoSetStop",      1)) UbtServo.setServoStop(Param[0]);
 
-   if (Command.Match("ServoGetId",        0)) CSerial.printf("R: %d\n", (int)UbtServo.getServoId());          // get lowest ID
+   if (Command.Match("Scan",              0)) UbtServo.Scan(); // scan for servo's & print result
+
    if (Command.Match("ServoGetId",        1)) CSerial.printf("R: %d\n", (int)UbtServo.getServoId(Param[0]));
 
    if (Command.Match("ServoSetId",        2)) CSerial.printf("R: %d\n", (int)UbtServo.setServoId(Param[0], Param[1]));

@@ -11,7 +11,7 @@ public:
 
    // from uKitId
    unsigned char setServoId(char oldid,char newid);
-   unsigned char getServoId();
+   void Scan();
    unsigned char getServoId(char id);
 
    unsigned char setServoId1M(char oldid,char newid);
