@@ -159,26 +159,3 @@ int uKitServo::readServoAngleNPD(unsigned char id){ // Single servo read back (r
    else
       return 0;
 }
-
-void uKitServo::ServoRead()
-   {  unsigned char t=0;
-      static unsigned char ServoId[19]={0};           // 1..18, [0] is unused.
-      static unsigned char ServoIdRead[19]={0};
-      static int start=0;
-
-      if (start == 0) {
-         Serial.print("Servo currently read ID：{");
-         for (int i=1;i<=18;i++) {
-            ServoId[i]=getServoId(i);
-            if (ServoId[i]!=0) {
-               ServoIdRead[t]=ServoId[i];
-               Serial.print(ServoIdRead[t]);
-               Serial.print(",");
-               t++;
-            }
-         }
-         Serial.println("}");
-         start=1;
-      }
-      Serial.println("dit nog herstellen?!?"); //  readServoAnglePD_M(ServoIdRead,t);
-   }

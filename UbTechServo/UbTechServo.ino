@@ -134,8 +134,6 @@ void Execute(int Param[])
 
    if (Command.Match("ServoSetId",        2)) CSerial.printf("R: %d\n", (int)UbtServo.setServoId(Param[0], Param[1]));
 
-   if (Command.Match("ServoRead",         0)) UbtServo.ServoRead();          // list all
-
    if (Command.Match("ServoReadAngle",    1)) printf("Hoek: %d\n", UbtServo.readServoAngleNPD(Param[0]));
    if (Command.Match("ServoReadAnglePD",  1)) printf("Hoek: %d\n", UbtServo.readServoAnglePD(Param[0]));
 }
