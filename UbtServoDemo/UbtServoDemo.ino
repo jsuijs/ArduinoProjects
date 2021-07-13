@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// UbTechServo.ino - demo program for UbTech servo control
+// UbtServoDemo.ino - demo program for UbTech servo control
 //-----------------------------------------------------------------------------
 #define MAIN
 #include "Project.h"

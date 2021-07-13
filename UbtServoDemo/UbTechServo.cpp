@@ -185,8 +185,6 @@ unsigned char SemiduplexSerial::ubtServoActionProtocol(unsigned char Head,unsign
       return UbtWrite(TxBuf, len+1,  RxBuf, RxAckLen+len+1);
    }
 
-
-
 //-----------------------------------------------------------------------------
 // uKitServo::setServoId - change Id of servo
 //-----------------------------------------------------------------------------
@@ -234,7 +232,11 @@ unsigned char uKitServo::getServoId(char id)
       return tRet;
 }
 
-// Servo geeft antwoord maar geen actie??
+//-----------------------------------------------------------------------------
+// uKitServo::setServoTurn
+//-----------------------------------------------------------------------------
+// Servo responds but no action??
+//-----------------------------------------------------------------------------
 void uKitServo::setServoTurn(unsigned char id,int dir, int speed)
    {
       unsigned char buf[4];
@@ -281,7 +283,7 @@ void uKitServo::setServoStop(unsigned char id)
    }
 
 //-----------------------------------------------------------------------------
-// uKitServo::setServoStiffness - ?? 255 = off?  only 4 bytes (of 8) defined...
+// uKitServo::setServoStiffness - ?255 = off?  only 4 bytes (of 8) defined...
 //-----------------------------------------------------------------------------
 // stiffness inequal to 255 enables power and might turn servo to a
 // new position...
