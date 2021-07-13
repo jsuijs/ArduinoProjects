@@ -12,6 +12,8 @@ TFlags Flags(32);
 #include "UbTechServo.h"   // servo class
 uKitServo UbtServo;
 
+#include "Biped.h"
+
 // command-parser
 void Execute();
 TCommand  Command(Execute);
@@ -77,6 +79,9 @@ void Execute(int Param[])
 
    if (Command.Match("ServoReadAngle",    1)) printf("Degrees: %d\n", UbtServo.readServoAngleNPD(Param[0]));
    if (Command.Match("ServoReadAnglePD",  1)) printf("Degrees: %d\n", UbtServo.readServoAnglePD(Param[0]));
+
+   if (Command.Match("BSet",              6)) BipedSet(Param);
+   if (Command.Match("BRead",             0)) BipedRead();
 }
 
 //-----------------------------------------------------------------------------

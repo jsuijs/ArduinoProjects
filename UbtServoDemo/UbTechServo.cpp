@@ -109,7 +109,7 @@ Retry_Servo:
             break;
          case 0x02:  // readServoAnglePD
             tRet=(RxBuf[len+7]<<8) |(RxBuf[len+8] & 0xff);
-            CSerial.printf("c5 %d (%d %d)\n", tRet, RxBuf[len+7], RxBuf[len+8]);
+            //CSerial.printf("c5 %d (%d %d)\n", tRet, RxBuf[len+7], RxBuf[len+8]);
             break;
          case 0x03:  // readServoAngleNPD
             tRet=(RxBuf[len+7]<<8) |(RxBuf[len+8] & 0xff);
@@ -117,7 +117,7 @@ Retry_Servo:
             // 5/6 seems to be setpoint
             // 7/8 seems to be actual, but only from -118 .. 60, while range is -118..118
             // 0 = no angle
-            CSerial.printf("c6 %d\n", tRet);
+            //CSerial.printf("c6 %d\n", tRet);
             break;
       }
   }
