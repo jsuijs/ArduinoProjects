@@ -28,8 +28,10 @@ void setup() {
    CSerial.printf("Start\n");
 
    UbtSetup();
+   UbtServo.getServoId(9);    // first message always fails, so have that failure now
+                              // (works when servo # exists and when it doesn't...).
 
-   pinMode(PB1, OUTPUT);    //Led on Maple-Mini
+   pinMode(PB1, OUTPUT);      //Led on Maple-Mini
 
    CSerial.printf("Startup done.\n");
 }
@@ -80,6 +82,7 @@ void Execute(int Param[])
    if (Command.Match("ServoReadAngle",    1)) printf("Degrees: %d\n", UbtServo.readServoAngleNPD(Param[0]));
    if (Command.Match("ServoReadAnglePD",  1)) printf("Degrees: %d\n", UbtServo.readServoAnglePD(Param[0]));
 
+   // Biped-specific commands.
    if (Command.Match("BSet",              6)) BipedSet(Param);
    if (Command.Match("BRead",             0)) BipedRead();
 }
@@ -92,9 +95,8 @@ extern "C" int _write(int file, char *ptr, int len)
 {
     int i;
     file = file;
-    for (i = 0; i < len; i++)
-    {
-        CSerial.print(*ptr++);
+    for (i = 0; i < len; i++) {
+       CSerial.print(*ptr++);
     }
     return len;
 }
