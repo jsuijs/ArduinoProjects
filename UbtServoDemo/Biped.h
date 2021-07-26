@@ -143,22 +143,24 @@ void TActionEngine::NewAction(int NewIx)
 //-----------------------------------------------------------------------------
 void TActionEngine::ExecuteAction(TAction &InAction)
    {
+      int STime = InAction.StepTime * SpeedFactor;
+
       if (ActionIx == 0) {
          // No commands to servo's
       } else {
-         // Translate degrees to raw (with offset) and map to servo's
-         UbtServo.setServoAngle(3,  1.11 * (InAction.J0 - (10 /  1.11)), InAction.StepTime * SpeedFactor);
-         UbtServo.setServoAngle(4, -1.11 * (InAction.J1 - ( 4 / -1.11)), InAction.StepTime * SpeedFactor);
-         UbtServo.setServoAngle(2,  1.11 * (InAction.J2 - ( 8 /  1.11)), InAction.StepTime * SpeedFactor);
-         UbtServo.setServoAngle(1, -1.11 * (InAction.J3 - ( 6 / -1.11)), InAction.StepTime * SpeedFactor);
+         // Translate degrees to raw (with offset) and map from Joint # to servo #
+         UbtServo.setServoAngle(3,  1.11 * InAction.J0 - 10, STime);
+         UbtServo.setServoAngle(4, -1.11 * InAction.J1 -  4, STime);
+         UbtServo.setServoAngle(2,  1.11 * InAction.J2 -  8, STime);
+         UbtServo.setServoAngle(1, -1.11 * InAction.J3 -  6, STime);
       }
 
       // Direction-servo
       switch (InAction.Cmd) {
-         case CMD_IDLE           : /* No commands to servo's */                                             break;
-         case CMD_4S_TURN        : UbtServo.setServoAngle(5,  1.11 * TurnHeading, InAction.StepTime * SpeedFactor);  break;
-         case CMD_4S_ANTI_TURN   : UbtServo.setServoAngle(5, -1.11 * TurnHeading, InAction.StepTime * SpeedFactor);  break;
-         default                 : UbtServo.setServoAngle(5,  1.11 * WalkHeading, InAction.StepTime * SpeedFactor);  break;
+         case CMD_IDLE           : /* No commands to servo's */                           break;
+         case CMD_4S_TURN        : UbtServo.setServoAngle(5,  1.11 * TurnHeading, STime);  break;
+         case CMD_4S_ANTI_TURN   : UbtServo.setServoAngle(5, -1.11 * TurnHeading, STime);  break;
+         default                 : UbtServo.setServoAngle(5,  1.11 * WalkHeading, STime);  break;
       }
    }
 
@@ -168,7 +170,7 @@ void TActionEngine::ExecuteAction(TAction &InAction)
 //-----------------------------------------------------------------------------
 void TActionEngine::Takt(int NewSequence)
    {
-      if (WaitDone() == false) return;  // still waiting after previous action
+      if (WaitDone() == false) return;  // Wait-time of previous action
 
       // Next action
       CSerial.printf("Takt NewSequence: %d, ActiveSequence: %d, ActionIx: %d\n", NewSequence, ActiveSequence, ActionIx);
