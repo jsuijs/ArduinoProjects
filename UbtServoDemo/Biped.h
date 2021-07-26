@@ -40,30 +40,51 @@ const char CMD_4SERVO_STEP    = 1;
 const char CMD_4S_TURN        = 2;
 const char CMD_4S_ANTI_TURN   = 3;
 
-const short EVENT_IDLE         = 0;    // Robot in default position
-const short EVENT_STEP         = 1;    // Step to NextState
-const short EVENT_TURN_STOP1   = 2;    // Turn-done check 1 (goto T2_0 if true)
-const short EVENT_TURN_STOP2   = 3;    // Turn-done check 2 (goto T1_0 if true)
-
-
 struct TAction {
-  char  Cmd;      // Command (what action)
-  char  Event;    // Event when action is done (NextState or Special)
-  char  Next;     // Next (no stop)
-  char  NextStop; // Next when STOP is set
-  char  J0;       // Degrees for Joint 0 (which maps to servo3)
-  char  J1;
-  char  J2;
-  char  J3;
-  char  StepTime; // servo turn-time in 10ms steps
-  char  WaitTime; // wait-time (normally >= StepTime) in 10ms steps
+  short  Cmd;      // Command (what action)
+  short  Next;     // Next (linked list, no stop)
+  short  NextStop; // Next when STOP is set
+  short  J0;       // Degrees for Joint 0 (which maps to servo3)
+  short  J1;
+  short  J2;
+  short  J3;
+  short  StepTime; // servo turn-time in 10ms steps
+  short  WaitTime; // wait-time (normally >= StepTime) in 10ms steps
 } ;
 
+#define TN2 16 // turn stop (halfway)
 
 TAction Actions[] = {
-   //                               Next  NextStop J0    J1    J2    J3    STime WTime
-   { CMD_IDLE,          EVENT_IDLE,    0,    0,    0,    0,    0,    0,     0,   10},   // IDLE
-   { CMD_4SERVO_STEP,   EVENT_STEP,    0,    0,    3,    4,    5,    1,    50,   70},   // GP0 - description
+   //                           Next NextStop J0    J1    J2    J3    STime WTime
+#define IDLE_IX 0
+   /*   0 */ { CMD_IDLE,           0,    0,    0,    0,    0,    0,     0,   10},  // IDLE
+
+#define GP0 1
+   /*   1 */ { CMD_4SERVO_STEP,    0,    0,   13,  -11,   -6,    9,    50,  100},  // GenPosture_0 - Voeten bij elkaar, rust
+
+#define GP1 2  // start of large step
+   /*   2 */ { CMD_4SERVO_STEP,    3,  GP0,    12,    1,  -13,   17,   50,  100},  // GenPosture_1 - voeten bij elkaar, voorvoet vrij
+   /*   3 */ { CMD_4SERVO_STEP,    4,    4,     7,   -4,   45,  -30,   50,  100},  // GenPosture_2 - voorvoet max reach, vlak op grond
+   /*   4 */ { CMD_4SERVO_STEP,    5,    5,   -18,   18,   16,  -26,   60,  120},  // GenPosture_3 - gewicht naar midden
+   /*   5 */ { CMD_4SERVO_STEP,    6,    6,   -40,   50,  -19,   10,   60,  120},  // GenPosture_4 - gewicht naar voor
+   /*   6 */ { CMD_4SERVO_STEP,    7,    7,   -15,   50,  -22,   10,   50,  100},  // P5 - achtervoet strekken (omklappen)
+   /*   7 */ { CMD_4SERVO_STEP,    8,    8,    11,   50,  -22,   39,   50,  100},  // P6 - kantel gewicht naar voren
+   /*   8 */ { CMD_4SERVO_STEP,    9,    9,    11,   50,  -22,   46,   50,  100},  // P7 - achtervoet vrij
+   /*   9 */ { CMD_4SERVO_STEP,   10,   10,   -32,   48,  -23,   50,   50,  100},  // Posture_6 - achtervoet vrij (omklappen)
+   /*  10 */ { CMD_4SERVO_STEP,  GP1,  GP1,   -16,   12,  -30,   34,   50,  100},  // Posture_7 - achtervoet bijtrekken
+
+#define TN1 11 // start of turn
+   /*  11 */ { CMD_4SERVO_STEP,   12,   12,    14,    1,  -10,  13,    50,  100}, // T1 - Turn voor vrij, 0 graden
+   /*  12 */ { CMD_4S_TURN,       13,   13,    14,    1,  -10,  13,    50,  100}, // T1_L20 - Turn voor vrij, links 20 graden
+   /*  13 */ { CMD_4S_TURN,       14,  TN2,   -22,   19,  -28,  40,    50,  100}, // T2_L20 - Turn achter vrij, links 20 graden
+   /*  14 */ { CMD_4S_ANTI_TURN,  15,   15,   -22,   19,  -28,  40,    50,  100}, // T2_R20 - Turn achter vrij, rechts 20 graden
+   /*  15 */ { CMD_4S_ANTI_TURN, TN1,  GP0,    14,    1,  -10,  13,    50,  100}, // T1_R20 - Turn voor vrij, rechts 20 graden
+
+//==>> #define TN2 16 // turn stop (halfway)
+   /*  16 */ { CMD_4SERVO_STEP,  TN1,  TN1,   -22,   19,  -28,  40,    50,  100}, // T2 - Turn achter vrij, 0 graden
+
+//==>> dummy (no comma)
+   /* 999 */ { 99, 99, 99, 99, 99, 99, 99, 99, 99}  // Dummy
    };
 
 class TActionEngine
@@ -71,113 +92,105 @@ class TActionEngine
    public :
       TActionEngine() : Action(Actions[0])
          {
-            ActionIx = 0;
+            ActionIx    = 0;
+            SpeedFactor = 10; // StepTime / Waittime factor (default 10 ms)
          }
 
       void SetWait(int Delay_ms) { WaitEnd = millis() + Delay_ms;          }
       bool WaitDone()            { return (((int)millis()) - WaitEnd) > 0; }
+      void TestPose(int Ix)      { ExecuteAction(Actions[Ix]);             }
 
-      void Takt(int Mode);
+      void Takt(int NewSequence);
+
+      int SpeedFactor;
 
    private :
-      void ExecuteAction();
+      void NewAction(int NewIx);
+      void ExecuteAction(TAction &Action);
       bool Wait();
-      void Transition(int Mode);
 
       int ActionIx;
       int WaitEnd;
       TAction &Action;
       char WalkHeading, TurnHeading;
-      int ActiveMode;
+      int ActiveSequence;
       bool StopFlag;
 
 } ActionEngine;
 
 //-----------------------------------------------------------------------------
+// TActionEngine::NewAction - go to new action & execute it
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+void TActionEngine::NewAction(int NewIx)
+   {
+      if (ActionIx == NewIx) return;   // no action required.
+
+      // Step to requested action
+      CSerial.printf("NewAction %d -> %d\n", ActionIx, NewIx);
+      ActionIx = NewIx;
+      Action   = Actions[ActionIx];
+
+      // Execute action
+      ExecuteAction(Action);
+      SetWait(Action.WaitTime * SpeedFactor);
+   }
+
+//-----------------------------------------------------------------------------
 // TActionEngine::ExecuteAction - Execute current action
 //-----------------------------------------------------------------------------
+// Note: InAction as param for TestPose
 //-----------------------------------------------------------------------------
-void TActionEngine::ExecuteAction()
+void TActionEngine::ExecuteAction(TAction &InAction)
    {
-      if (Action.Cmd == CMD_IDLE) {
+      if (ActionIx == 0) {
          // No commands to servo's
       } else {
          // Translate degrees to raw (with offset) and map to servo's
-         UbtServo.setServoAngle(3,  1.11 * (Action.J0 - 10), Action.StepTime);
-         UbtServo.setServoAngle(4, -1.11 * (Action.J1 -  4), Action.StepTime);
-         UbtServo.setServoAngle(2,  1.11 * (Action.J2 -  8), Action.StepTime);
-         UbtServo.setServoAngle(1, -1.11 * (Action.J3 -  6), Action.StepTime);
+         UbtServo.setServoAngle(3,  1.11 * (InAction.J0 - (10 /  1.11)), InAction.StepTime * SpeedFactor);
+         UbtServo.setServoAngle(4, -1.11 * (InAction.J1 - ( 4 / -1.11)), InAction.StepTime * SpeedFactor);
+         UbtServo.setServoAngle(2,  1.11 * (InAction.J2 - ( 8 /  1.11)), InAction.StepTime * SpeedFactor);
+         UbtServo.setServoAngle(1, -1.11 * (InAction.J3 - ( 6 / -1.11)), InAction.StepTime * SpeedFactor);
       }
 
-      switch (Action.Cmd) {
-         case CMD_IDLE           : /* No commands to servo's */                                     break;
-         case CMD_4S_TURN        : UbtServo.setServoAngle(5,  1.11 * TurnHeading, Action.StepTime); break;
-         case CMD_4S_ANTI_TURN   : UbtServo.setServoAngle(5, -1.11 * TurnHeading, Action.StepTime); break;
-         default                 : UbtServo.setServoAngle(5,  1.11 * WalkHeading, Action.StepTime); break;
+      // Direction-servo
+      switch (InAction.Cmd) {
+         case CMD_IDLE           : /* No commands to servo's */                                             break;
+         case CMD_4S_TURN        : UbtServo.setServoAngle(5,  1.11 * TurnHeading, InAction.StepTime * SpeedFactor);  break;
+         case CMD_4S_ANTI_TURN   : UbtServo.setServoAngle(5, -1.11 * TurnHeading, InAction.StepTime * SpeedFactor);  break;
+         default                 : UbtServo.setServoAngle(5,  1.11 * WalkHeading, InAction.StepTime * SpeedFactor);  break;
       }
    }
 
 //-----------------------------------------------------------------------------
 // TActionEngine::Takt -
 //-----------------------------------------------------------------------------
-//
 //-----------------------------------------------------------------------------
-void TActionEngine::Takt(int NewMode)
+void TActionEngine::Takt(int NewSequence)
    {
-      if (WaitDone() == false) return;  // still waiting
+      if (WaitDone() == false) return;  // still waiting after previous action
 
-      Transition(NewMode);  // go to next action
+      // Next action
+      CSerial.printf("Takt NewSequence: %d, ActiveSequence: %d, ActionIx: %d\n", NewSequence, ActiveSequence, ActionIx);
 
-      ExecuteAction();  // Execute action & set wait-time
-   }
-
-//-----------------------------------------------------------------------------
-// TActionEngine::Transition - Move to next state
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-void TActionEngine::Transition(int NewMode)
-   {
-      int NewIx = -1;
-
-      bool StopFlag = (ActiveMode != NewMode);
-
-      switch(Action.Event) {
-
-         case EVENT_STEP       : { // Step to NextState
-            NewIx = Action.Next;
+      if (ActionIx == IDLE_IX) {
+         // we're idle => start new sequence
+         ActiveSequence = NewSequence;
+         switch(ActiveSequence) {
+            case 0 : NewAction(IDLE_IX);  SetWait(100);        break;   // remain idle
+            case 1 : NewAction(GP0);                           break;   // default pose & then idle
+            case 2 : NewAction(GP1);                           break;   // Large steps
+            case 3 : NewAction(TN1);      TurnHeading =  10;   break;   // Turn left
+            case 4 : NewAction(TN1);      TurnHeading = -10;   break;   // Turn right
          }
-         break;
-
-         case EVENT_IDLE       : {  // Robot in default position => transition to other modes
-            ActiveMode = NewMode;
-            switch(ActiveMode) { // ActiveMode is Ix of first sequence step
-               case 0 : {  // Remain idle.
-               }
-               break;
-            }
+      } else {
+         // we're NOT idle, so next step
+         if (ActiveSequence == NewSequence) {
+            // Continue this sequence
+            NewAction(Action.Next);
+         } else {
+            // Follow stop-sequence
+            NewAction(Action.NextStop);
          }
-         break;
-
-         case EVENT_TURN_STOP1 : { // Turn-done check 1 (goto T2_0 if true)
-         }
-         break;
-
-         case EVENT_TURN_STOP2 : { // Turn-done check 2 (goto T1_0 if true)
-         }
-         break;
-
-         default : {
-            CSerial.printf("Unknown event %d (ActionIx %d)\n", Action.Event, ActionIx);
-            NewIx = 0;
-         }
-         break;
       }
-
-      if (NewIx < 0) {
-         CSerial.printf("Invalid NewIx %d at event %d (ActionIx %d)\n", NewIx, Action.Event, ActionIx);
-         NewIx = 0;
-      }
-
-      CSerial.printf("ExecutionTakt Event %d, ActionIx %d -> %d", Action.Event, ActionIx, NewIx);
    }
-

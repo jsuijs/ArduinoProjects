@@ -18,6 +18,8 @@ uKitServo UbtServo;
 void Execute();
 TCommand  Command(Execute);
 
+int InSequence = 0;
+
 //---------------------------------------------------------------------------------------
 // setup -
 //---------------------------------------------------------------------------------------
@@ -50,7 +52,7 @@ void loop() {
       BlinkTakt();
    }
 
-   //ActionEngine.Takt(0);
+   ActionEngine.Takt(InSequence);
 
    Command.Takt(CSerial);  // Console command interpreter
 }
@@ -87,6 +89,8 @@ void Execute(int Param[])
    // Biped-specific commands.
    if (Command.Match("BSet",              6)) BipedSet(Param);
    if (Command.Match("BRead",             0)) BipedRead();
+   if (Command.Match("Pose",              1)) ActionEngine.TestPose(Param[0]);
+   if (Command.Match("Sequence",          1)) InSequence = Param[0];
 }
 
 //-----------------------------------------------------------------------------
