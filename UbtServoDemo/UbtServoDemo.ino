@@ -50,6 +50,8 @@ void loop() {
       BlinkTakt();
    }
 
+   //ActionEngine.Takt(0);
+
    Command.Takt(CSerial);  // Console command interpreter
 }
 
