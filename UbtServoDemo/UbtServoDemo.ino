@@ -6,19 +6,13 @@
 
 HardwareSerial Serial2 (PA3, PA2);  // console serial
 
-TFlags Flags(32);
-
 #include "UbTechSerial.h"  // UBT serial port (stm32f1 specific, hardcoded to Serial1)
 #include "UbTechServo.h"   // servo class
 uKitServo UbtServo;
 
-#include "Biped.h"
-
 // command-parser
 void Execute();
 TCommand  Command(Execute);
-
-int InSequence = 0;
 
 //---------------------------------------------------------------------------------------
 // setup -
@@ -52,8 +46,6 @@ void loop() {
       BlinkTakt();
    }
 
-   ActionEngine.Takt(InSequence);
-
    Command.Takt(CSerial);  // Console command interpreter
 }
 
@@ -65,10 +57,6 @@ void loop() {
 void Execute(int Param[])
 {
    if (Command.Match("?",                 0)) Command.Help("ArduinoPlanck command parser.");
-
-   if (Command.Match("Flag",              1)) CSerial.printf("Flag %d is %d\n", Param[0], Flags.IsSet(Param[0]));
-   if (Command.Match("Flag",              2)) Flags.Set(Param[0], Param[1]);
-   if (Command.Match("FlagDump",          0)) Flags.Dump();
 
    if (Command.Match("ServoSetTurn",      3)) UbtServo.setServoTurn(Param[0], Param[1], Param[3]);  // id dir speed
    if (Command.Match("ServoSetStif",      2)) UbtServo.setServoStiffness(Param[0], Param[1]);
@@ -85,12 +73,6 @@ void Execute(int Param[])
 
    if (Command.Match("ServoReadAngle",    1)) printf("Degrees: %d\n", UbtServo.readServoAngleNPD(Param[0]));
    if (Command.Match("ServoReadAnglePD",  1)) printf("Degrees: %d\n", UbtServo.readServoAnglePD(Param[0]));
-
-   // Biped-specific commands.
-   if (Command.Match("BSet",              6)) BipedSet(Param);
-   if (Command.Match("BRead",             0)) BipedRead();
-   if (Command.Match("Pose",              1)) ActionEngine.TestPose(Param[0]);
-   if (Command.Match("Sequence",          1)) InSequence = Param[0];
 }
 
 //-----------------------------------------------------------------------------
