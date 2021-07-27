@@ -1,0 +1,46 @@
+[Project ID]
+Signature=UE Proj: v.1
+Unicode=2
+[Project Information]
+Use Relative Directory=1
+Relative to Project File=1
+Include Sub Directories=1
+Project TagfileU=
+Project WordfileU=
+Project TpFileU=
+FilterU=
+Create Tagfile=0
+[Files]
+	0=Planck.ino
+	1=HeenEnWeer.ino
+	2=setup.ino
+	3=Encoders.ino
+	4=ProgrammaTakt.ino
+	5=Position.h
+	6=Drive.h
+	7=RobotSettings.h
+	8=Utilities.ino
+	9=MotorController.ino
+	10=RcDispatch.ino
+	11=Motors_TB6612.ino
+[FilesW]
+0=HeenEnWeer.ino
+1=setup.ino
+2=ProgrammaTakt.ino
+3=RobotSettings.h
+4=MotorController.ino
+5=RcDispatch.ino
+6=Mega_Beam.ino
+7=MyRobot.h
+8=Position.cpp
+9=Drive.cpp
+10=Motors_TB6612.cpp
+[FilesU]
+0=Libs+AFw-Commands.h
+1=Project.h
+2=UbTechSerial.h
+3=UbTechServo.h
+4=UbTechServo.cpp
+5=UbtServoDemo.ino
+6=Libs+AFw-Flags.h
+7=Biped.h
