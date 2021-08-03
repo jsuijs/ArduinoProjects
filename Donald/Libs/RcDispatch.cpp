@@ -2,6 +2,28 @@
 // RcDispach.cpp
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
+#include "Libs/RC5.h"
+
+//---------------------------------------------------------------------------------------
+// RC5 start
+//
+int Rc5Data;  // Set on receive, feel free to set to zero when done.
+
+RC5 rc5(IR_PIN);
+
+void Rc5Isr()
+{ static unsigned int   PrevMessage;
+  unsigned int Message;
+  if (rc5.read(&Message)) {
+    if (Message != PrevMessage) {
+      Rc5Data     = Message;
+      PrevMessage = Message;
+    }
+  }
+}
+//
+// Rc5 done (but do not forget to attach Rc5Isr() to IrPin).
+//---------------------------------------------------------------------------------------
 
 static int _PfKey = 0;  // see PfKeyGet()
 

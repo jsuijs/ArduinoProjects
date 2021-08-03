@@ -5,12 +5,17 @@
 #ifndef PROJECT_H
 #define PROJECT_H
 
+#include "Arduino.h"
+
+const int MAIN_TAKT_INTERVAL = 10;
+
 extern HardwareSerial Serial2;
 #define CSerial Serial2       // define Console-serial
 #define MyPrintf CSerial.printf
 
 #include "Libs/Commands.h"    // contains code...
 #include "Libs/Flags.h"       // contains code...
+#include "Libs/State.h"
 
 const int RC_STOP      = 0x3775; // STOP robot - stop button (Function-key -1)
 
@@ -26,5 +31,11 @@ const int RC_F09       = 0x3769; // zoom
 const int RC_F10       = 0x274c; // - volume
 const int RC_F11       = 0x3751; // + volume
 const int RC_F12       = 0x3750; // store
+
+void RcDispatch(int &RcData);
+void PfKeySet(int InKey);
+int  PfKeyGet();
+
+void ProgramTakt();
 
 #endif

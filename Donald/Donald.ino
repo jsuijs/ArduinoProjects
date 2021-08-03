@@ -7,27 +7,11 @@
 HardwareSerial Serial2 (PA3, PA2);  // console serial
 
 //---------------------------------------------------------------------------------------
-// RC5 stuff start
-#include "Libs/RC5.h"
-
-int Rc5Data;  // Set on receive, feel free to set to zero when done.
+// RC5
 int IR_PIN = PB10;
-//int RC5_INTERRUPT = 0;
-RC5 rc5(IR_PIN);
-
-void Rc5Isr()
-{ static unsigned int   PrevMessage;
-  unsigned int Message;
-  if (rc5.read(&Message)) {
-    if (Message != PrevMessage) {
-      Rc5Data     = Message;
-      PrevMessage = Message;
-    }
-  }
-}
-// Rc5 stuff done (but do not forget to attach Rc5Isr() to IrPin).
-//---------------------------------------------------------------------------------------
 #include "Libs/RcDispatch.cpp"
+// Rc5 done (but do not forget to attach Rc5Isr() to IrPin).
+//---------------------------------------------------------------------------------------
 
 TFlags Flags(32);
 
@@ -69,7 +53,11 @@ void setup() {
 //---------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------
 void loop() {
+   static int NextMainTakt;
    static int PrevMs;
+
+   Command.Takt(CSerial);  // Console command interpreter
+   RcDispatch(Rc5Data);    // Process RC5 commands
 
    // once per milisecond
    int ms = millis();
@@ -78,23 +66,12 @@ void loop() {
       BlinkTakt();
    }
 
-   ActionEngine.Takt(InSequence);
-
-   Command.Takt(CSerial);  // Console command interpreter
-   RcDispatch(Rc5Data);
-
-   int ch = PfKeyGet();
-   if (ch) {
-      // knop ingedrukt
-
-      CSerial.printf("Key: %d\n", ch);
-//      if (ch == -1) {
-//         Program.Reset();           // reset, stop lopend programma / programma 'stilstaan'.
-//      } else {
-//         if (Program.State == 0) {  // andere pfkeys werken alleen als we stil staan
-//            Program.State = ch;
-//         }
-//      }
+   // Main takt interval
+   ms = millis();
+   if ((ms - NextMainTakt) > 0) {
+      NextMainTakt = ms + MAIN_TAKT_INTERVAL;
+      ProgramTakt();
+      ActionEngine.Takt(InSequence);
    }
 }
 
