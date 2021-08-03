@@ -147,7 +147,7 @@ void TActionEngine::Takt(int NewSequence)
       if (WaitDone() == false) return;  // Wait-time of previous action
 
       // Next action
-      CSerial.printf("Takt NewSequence: %d, ActiveSequence: %d, ActionIx: %d\n", NewSequence, ActiveSequence, ActionIx);
+//      CSerial.printf("Takt NewSequence: %d, ActiveSequence: %d, ActionIx: %d\n", NewSequence, ActiveSequence, ActionIx);
 
       if (ActionIx == IDLE_IX) {
          // we're idle => start new sequence

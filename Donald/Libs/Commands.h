@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// Commands.h - (c) 2016-2020 Karel Dupain & Joep Suijs
+// Commands.h - (c) 2016-2021 Karel Dupain & Joep Suijs
 //-----------------------------------------------------------------------------
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -13,11 +13,8 @@
 #define CMD_BUFFER_SIZE 64          // Command with parameters.
 #define CMD_MAX_NR_PARAMETERS 9
 
-void MyCommands(int Number[]);
 void HexDump(const void *Data, int Length);
 void HexDump( const void *Data, unsigned int Length, unsigned int Offset);
-int  my_putc(char c, FILE *t);
-int  FreeRam();
 
 /*=====================================================================
  TCommand :
@@ -35,7 +32,7 @@ public:
 
    void Print()
    {
-      CSerial.printf( "Cnt = %d  A=%u  B=%u  C=%u  Cmd=%s\r\n", ParamCount, Param[0], Param[1], Param[2], Cmd) ;
+      MyPrintf( "Cnt = %d  A=%u  B=%u  C=%u  Cmd=%s\r\n", ParamCount, Param[0], Param[1], Param[2], Cmd) ;
    }
 
    // functions below public, just in case you need to build your own takt...
@@ -90,8 +87,8 @@ int TCommand::GetLine(int Value)
       if (Value < 0 ) return 0;
       if (Value == 0x0a) Value = 0x0d;
 
-//      CSerial.printf("GL Value: %d (%c), State: %d, NrIndex: %d, ParamCount: %d\n", Value, Value, State, NrIndex, ParamCount);
-//      CSerial.printf("GL Value: %d (%c), State: %d\n", Value, Value, State);
+//      MyPrintf("GL Value: %d (%c), State: %d, NrIndex: %d, ParamCount: %d\n", Value, Value, State, NrIndex, ParamCount);
+//      MyPrintf("GL Value: %d (%c), State: %d\n", Value, Value, State);
 
       switch( State )   {
 
@@ -276,7 +273,7 @@ int TCommand::GetLine(int Value)
 //-----------------------------------------------------------------------------
 void TCommand::Help(const char *Str)
    {
-      CSerial.println(Str);
+      MyPrintf(Str);
       HelpFlag = true;
       (*Executor)(Param);
       HelpFlag = false;
@@ -290,15 +287,15 @@ void TCommand::Help(const char *Str)
 bool TCommand::Match(const char *Keyword, byte NrParams)
    {
       if (HelpFlag) {
-         CSerial.printf("(%d) %s\n", NrParams, Keyword);
+         MyPrintf("(%d) %s\n", NrParams, Keyword);
          return false;
       }
 
       //printf("Match Cmd: '%s' Keyword: '%s', NrParams: %d\n", Cmd, Keyword, NrParams);
-      if (LastError == 0)         return false;  // this command is already executed.
-      if (strcasecmp(Cmd, Keyword))   return false;  // not this command.
-      LastError = 1;  // command recognised, but (maybe) incorrect nr of params
-      if (ParamCount != NrParams) return false;  // incorrect nr of params
+      if (LastError == 0)           return false;  // this command is already executed
+      if (strcasecmp(Cmd, Keyword)) return false;  // not this command
+      LastError = 1;                               // command recognised, but (maybe) incorrect nr of params
+      if (ParamCount != NrParams)   return false;  // incorrect # of params (there might be an other entry with correct #)
       LastError = 0;  // success
       return true;    // execute command
    }
@@ -323,11 +320,11 @@ char TCommand::Execute(int Verbose)
 
       switch(LastError) {
          case 0 : {
-            if (Verbose > 1) CSerial.printf("Cmd '%s' gereed.\n", Cmd);
+            if (Verbose > 1) MyPrintf("Cmd '%s' gereed.\n", Cmd);
             return 1;
          }
          case 1 : {
-            if (Verbose > 0) CSerial.printf("Error: # params - cmd '%s'\n", Cmd);
+            if (Verbose > 0) MyPrintf("Error: # params - cmd '%s'\n", Cmd);
             return 2;
          }
          case 2 : {  // unknown command
@@ -335,13 +332,13 @@ char TCommand::Execute(int Verbose)
                // single char keyword => return char
                return Cmd[0];
             } else {
-               if (Verbose > 0) CSerial.printf("Onbekend cmd '%s' (2)\n", Cmd);
+               if (Verbose > 0) MyPrintf("Onbekend cmd '%s' (2)\n", Cmd);
                return 2;
             }
             break;
          }
          default : {
-            CSerial.printf("Error 0924\n");
+            MyPrintf("Error 0924\n");
             return 2;
          }
       }
@@ -367,7 +364,7 @@ char TCommand::Takt(Stream &Ser)
 
 
          if (r < 0) {
-            CSerial.printf("Cmd parse err %d\n", r);
+            MyPrintf("Cmd parse err %d\n", r);
             Clear();
             return 0;
          }
@@ -424,45 +421,36 @@ void HexDump( const void *Data, unsigned int Length, unsigned int Offset)
 
    // HEX part
    for (unsigned int Index=0; Index < Length; Index = Index+16) {
-      CSerial.printf( "%04x: ", Offset + Index );
+      MyPrintf( "%04x: ", Offset + Index );
       for(unsigned int j=0; j<16; j++) {
          if (Track1 < Length ) {
-            CSerial.printf( "%02x", data[ Index+j ] );
+            MyPrintf( "%02x", data[ Index+j ] );
          } else {
-            CSerial.printf( "  " );
+            MyPrintf( "  " );
          }
-         CSerial.printf( " " );
+         MyPrintf( " " );
          Track1++;
       }
 
-      CSerial.printf( " "  );
+      MyPrintf( " "  );
 
       // ASCII part
       for(unsigned int j=0; j<16; j++) {
          if (Track2 < Length) {
             if (data[Index+j] < 32 ) {
-               CSerial.printf( "." );
+               MyPrintf( "." );
             } else {
-               if (data[Index+j] < 127) CSerial.printf("%c", data[Index+j]);
-               else CSerial.printf(".");
+               if (data[Index+j] < 127) MyPrintf("%c", data[Index+j]);
+               else MyPrintf(".");
             }
          }
-         else CSerial.printf( " " );
+         else MyPrintf( " " );
          Track2++;
       }
-      CSerial.printf( "\n" );
+      MyPrintf( "\n" );
    }
 }
 #endif
-
-//-----------------------------------------------------------------------------
-// Bcd - convert decimal value to bcd.
-//-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-byte Bcd(byte Decimal)
-{
-   return (Decimal / 10) * 16 + (Decimal % 10);
-}
 
 #endif   // MAIN
 #endif   // COMMANDS_H
