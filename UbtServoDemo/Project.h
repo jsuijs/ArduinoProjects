@@ -6,7 +6,8 @@
 #define PROJECT_H
 
 extern HardwareSerial Serial2;
-#define CSerial Serial2       // define Console-serial
+#define CSerial  Serial2       // define Console-serial
+#define MyPrintf CSerial.printf
 
 #include "Libs/Commands.h"    // contains code...
 
