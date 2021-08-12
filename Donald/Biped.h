@@ -31,7 +31,7 @@ struct TAction {
 TAction Actions[] = {
    // ------------------------- Next NextStop J0    J1    J2    J3    STime WTime
 #define IDLE_IX 0
-   /*   0 */ { CMD_IDLE,           0,    0,    0,    0,    0,    0,     0,   10},  // IDLE
+   /*   0 */ { CMD_IDLE,           0,    0,    0,    0,    0,    0,     0,   50},  // IDLE
 
 #define GP0 1
    /*   1 */ { CMD_4SERVO_STEP,    0,    0,   13,  -11,   -6,    9,    50,  100},  // GenPosture_0 - Voeten bij elkaar, rust
@@ -48,11 +48,11 @@ TAction Actions[] = {
    /*  10 */ { CMD_4SERVO_STEP,  GP1,  GP1,   -16,   12,  -30,   34,   50,  100},  // Posture_7 - achtervoet bijtrekken
 
 #define TN1 11 // start of turn
-   /*  11 */ { CMD_4SERVO_STEP,   12,   12,    14,    1,  -10,  13,    50,  100}, // T1 - Turn voor vrij, 0 graden
+   /*  11 */ { CMD_4SERVO_STEP,   12,  GP0,    14,    1,  -10,  13,    50,  100}, // T1 - Turn voor vrij, 0 graden
    /*  12 */ { CMD_4S_TURN,       13,   13,    14,    1,  -10,  13,    50,  100}, // T1_L20 - Turn voor vrij, links 20 graden
    /*  13 */ { CMD_4S_TURN,       14,  TN2,   -22,   19,  -28,  40,    50,  100}, // T2_L20 - Turn achter vrij, links 20 graden
    /*  14 */ { CMD_4S_ANTI_TURN,  15,   15,   -22,   19,  -28,  40,    50,  100}, // T2_R20 - Turn achter vrij, rechts 20 graden
-   /*  15 */ { CMD_4S_ANTI_TURN, TN1,  GP0,    14,    1,  -10,  13,    50,  100}, // T1_R20 - Turn voor vrij, rechts 20 graden
+   /*  15 */ { CMD_4S_ANTI_TURN,  12,   11,    14,    1,  -10,  13,    50,  100}, // T1_R20 - Turn voor vrij, rechts 20 graden
 
 //==>> #define TN2 16 // turn stop (halfway)
    /*  16 */ { CMD_4SERVO_STEP,  TN1,  TN1,   -22,   19,  -28,  40,    50,  100}, // T2 - Turn achter vrij, 0 graden
@@ -86,7 +86,7 @@ class TActionEngine
       int ActionIx;
       int WaitEnd;
       TAction &Action;
-      char WalkHeading, TurnHeading;
+      int WalkHeading, TurnHeading;
       int ActiveSequence;
       bool StopFlag;
 
@@ -147,13 +147,14 @@ void TActionEngine::Takt(int NewSequence)
       if (WaitDone() == false) return;  // Wait-time of previous action
 
       // Next action
-//      CSerial.printf("Takt NewSequence: %d, ActiveSequence: %d, ActionIx: %d\n", NewSequence, ActiveSequence, ActionIx);
+      MyPrintf("Takt NewSequence: %d, ActiveSequence: %d, ActionIx: %d (WalkH: %d TurnH: %d)\n",
+            NewSequence, ActiveSequence, ActionIx, WalkHeading, TurnHeading);
 
       if (ActionIx == IDLE_IX) {
          // we're idle => start new sequence
          ActiveSequence = NewSequence;
          switch(ActiveSequence) {
-            case 0 : NewAction(IDLE_IX);  SetWait(100);        break;   // remain idle
+            case 0 : NewAction(IDLE_IX);  SetWait(100);        break;   // remain idle (regardless of the current pose)
             case 1 : NewAction(GP0);                           break;   // default pose & then idle
             case 2 : NewAction(GP1);                           break;   // Large steps
             case 3 : NewAction(TN1);      TurnHeading =  10;   break;   // Turn left

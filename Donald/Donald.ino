@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------------
-// UbtServoDemo.ino - demo program for UbTech servo control
+// Donald.ino - biped robot
 //-----------------------------------------------------------------------------
 #define MAIN
 #include "Project.h"
@@ -70,8 +70,8 @@ void loop() {
    ms = millis();
    if ((ms - NextMainTakt) > 0) {
       NextMainTakt = ms + MAIN_TAKT_INTERVAL;
-      ProgramTakt();
-      ActionEngine.Takt(InSequence);
+      //ProgramTakt();
+      //ActionEngine.Takt(InSequence);
    }
 }
 

@@ -21,17 +21,16 @@ void ProgramTakt()
       if (ch == -1) {
          Program.Reset();           // reset, stop running program / programma 'stand-still'.
       } else {
-         if (Program.State == 0) {  // other pfkeys only work when we're idle
+//         if (Program.State == 0) {  // other pfkeys only work when we're idle
             Program.State = ch;
-         }
+//         }
       }
    }
 
    Program.Update("Program", Flags.IsSet(10));
-   if (Program.NewState) {
-//      LppSensorDefaultSetup();      // re-load Lidar default configuration
-//      MissonS.Reset();              // reset mission statemachine
-   }
+//   if (Program.NewState) {
+//      // new program actions
+//   }
 
    // Call active program 1 trough 12
    switch(Program.State) {
@@ -45,11 +44,10 @@ void ProgramTakt()
       }
       break;
 
-      case 1 : { // Program:
-         //if (Rijden1Takt(Program.NewState)) Program.State = 0;
-      }
-      break;
-
+      case 1 : InSequence = 1; break;
+      case 2 : InSequence = 2; break;
+      case 3 : InSequence = 3; break;
+      case 4 : InSequence = 4; break;
 
 
       default : {
