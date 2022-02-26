@@ -1,16 +1,26 @@
 // I2cToolkit.ino -
-
-//-----------------------------------------------------------------------------
-// printf for microbit:
-extern "C" int _write(int __attribute__ ((unused)) file, char *buffer, int size)
-   { return Serial.write(buffer, size); }
-// #define MyPrintf CSerial.printf
+#define MAIN
+#include <Wire.h>
 
 //-----------------------------------------------------------------------------
 // printf for STM32:
-extern "C" void putch(unsigned char c)
-   { Serial.print((char)c); }
-// #define MyPrintf CSerial.printf
+
+   //https://forum.arduino.cc/index.php?topic=566042.0
+   //HardwareSerial Serial(PA10, PA9);   // RX, TX
+   HardwareSerial Serial(PA3, PA2);   // RX, TX
+
+   extern "C" int _write(int __attribute__ ((unused)) file, char *buffer, int size)
+      { return Serial.write(buffer, size); }
+
+   // Use alternative I2C pins
+   TwoWire TK_WIRE(PB11, PB10);   // sda, scl
+//---
+
+//-----------------------------------------------------------------------------
+// printf for microbit:
+//-extern "C" int _write(int __attribute__ ((unused)) file, char *buffer, int size)
+//-   { return Serial.write(buffer, size); }
+//-#define TK_WIRE Wire
 
 //-----------------------------------------------------------------------------
 // printf for AVR:
@@ -19,15 +29,13 @@ extern "C" void putch(unsigned char c)
      if (c == '\n') Serial.write('\r');
      return Serial.write(c);
    }
-
-   #define MyPrintf printf
+   #define TK_WIRE Wire
 #endif
+
+#define MyPrintf printf
 
 //-----------------------------------------------------------------------------
 // Toolkit & commands setup.
-#include <Wire.h>
-
-#define MAIN
 #include "Commands.h"
 void TkExecute(int Param[]);
 TCommand Command(TkExecute);
@@ -40,6 +48,7 @@ TCommand Command(TkExecute);
 //-----------------------------------------------------------------------------
 void setup() {
   Serial.begin(115200);      // start serial
+  Serial.print("-------------------------------------\n");
 
 #ifdef __AVR__
   fdevopen( &my_putc, 0);    // Link printf output (stdout) to serial port via my_putc().
@@ -47,7 +56,7 @@ void setup() {
 
   MyPrintf("I2c toolkit, compiled at %s %s\n", __DATE__, __TIME__ );
 
-  Wire.begin();              // start I2C
+  TK_WIRE.begin();              // start I2C
 }
 
 //-----------------------------------------------------------------------------

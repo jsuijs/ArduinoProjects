@@ -85,11 +85,11 @@ void I2cError(int Slave, int ErrorNr)
 //-----------------------------------------------------------------------------
 bool AddressProbe(int I2cSlaveAddress)
 {
-  Wire.requestFrom(I2cSlaveAddress, 1);    // request 2 bytes from slave device
+  TK_WIRE.requestFrom(I2cSlaveAddress, 1);    // request 2 bytes from slave device
 
-  if (Wire.available() == 0)   return false;  // slave not present
+  if (TK_WIRE.available() == 0)   return false;  // slave not present
 
-  Wire.read();  // flush buffer
+  TK_WIRE.read();  // flush buffer
   return true;  // slave present
 }
 
@@ -129,11 +129,11 @@ bool I2cSendReceive(byte I2cSlaveAddress, byte TxCount, byte RxCount, const byte
       HexDump(TxBuffer, TxCount);
     }
 
-    Wire.beginTransmission(I2cSlaveAddress);
+    TK_WIRE.beginTransmission(I2cSlaveAddress);
     for (int i=0; i<TxCount; i++) {
-      Wire.write(TxBuffer[i]); //
+      TK_WIRE.write(TxBuffer[i]); //
     }
-    r = Wire.endTransmission();
+    r = TK_WIRE.endTransmission();
     if (r != 0) return false;  // error
   }
 
@@ -141,12 +141,12 @@ bool I2cSendReceive(byte I2cSlaveAddress, byte TxCount, byte RxCount, const byte
 
     for (int i=0; i<RxCount; i++) RxBuffer[i] = 0;
 
-    Wire.requestFrom(I2cSlaveAddress, RxCount);    // request byte(s) from slave device
+    TK_WIRE.requestFrom(I2cSlaveAddress, RxCount);    // request byte(s) from slave device
 
-    if (Wire.available() != RxCount) return false;  // error
+    if (TK_WIRE.available() != RxCount) return false;  // error
 
     for (int i=0; i<RxCount; i++) {
-      RxBuffer[i] = Wire.read();
+      RxBuffer[i] = TK_WIRE.read();
     }
     if (I2cDebug > 2) {
       MyPrintf("RxBuf:\n");
