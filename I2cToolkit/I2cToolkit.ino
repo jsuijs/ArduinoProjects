@@ -2,6 +2,7 @@
 #define MAIN
 #include <Wire.h>
 
+#ifdef ARDUINO_ARCH_STM32
 //-----------------------------------------------------------------------------
 // printf for STM32:
 
@@ -15,6 +16,7 @@
    // Use alternative I2C pins
    TwoWire TK_WIRE(PB11, PB10);   // sda, scl
 //---
+#endif
 
 //-----------------------------------------------------------------------------
 // printf for microbit:
