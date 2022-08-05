@@ -13,6 +13,16 @@ FrameCount = 0
 StartupControl = True
 
 #------------------------------------------------------------------------------
+def AddSample(Degrees, Quality, Distance) :
+
+   X = math.cos(Degrees / 57.3) * Distance
+   Y = math.sin(Degrees / 57.3) * Distance * -1
+   OutFp.write("%d\t%d\t%d\t%d\t%d\n" % (Degrees, Quality, Distance, X, Y));
+   DValues.append(Distance)
+   XValues.append(X)
+   YValues.append(Y)
+
+#------------------------------------------------------------------------------
 def DecodeFrame(Message):
    global OutFp, StartupControl, FrameCount
 
@@ -44,16 +54,11 @@ def DecodeFrame(Message):
       Base = 8 + i * 3
       Distance = Message[Base + 0] + 256 * Message[Base + 1]
       Quality  = Message[Base + 2]
-      Angle = StartAngle + DeltaAngle * i
+      Degrees = StartAngle + DeltaAngle * i
 
       if Quality > 0 :
          if DeltaAngle > 0 :
-            X = math.cos(Angle / 57.3) * Distance
-            Y = math.sin(Angle / 57.3) * Distance * -1
-            OutFp.write("%d\t%d\t%d\t%d\t%d\n" % (Angle, Quality, Distance, X, Y));
-            DValues.append(Distance)
-            XValues.append(X)
-            YValues.append(Y)
+            AddSample(Degrees, Quality, Distance)
 
             if MaxDistance < Distance : MaxDistance = Distance # for extra validation
 
