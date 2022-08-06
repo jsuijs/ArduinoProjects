@@ -241,7 +241,7 @@ void TMaqueenPlus::Motors(int PwmL, int PwmR)
       delayMicroseconds(10);
 
       // set PWM & direction pin for RIGHT motor
-      Pwm = constrain(PwmR, -255, 255);;  // flip direction here if required.
+      Pwm = constrain(PwmR, -255, 255);      // flip direction here if required.
       if (Pwm >=0) {
          analogWrite(MAQUEENPLUS_PIN_MOTOR_R_INA, 255);
          analogWrite(MAQUEENPLUS_PIN_MOTOR_R_INB, 256-Pwm);
