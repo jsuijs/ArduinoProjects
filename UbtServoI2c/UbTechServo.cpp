@@ -233,9 +233,8 @@ unsigned char uKitServo::getServoId(char id)
 }
 
 //-----------------------------------------------------------------------------
-// uKitServo::setServoTurn
+// uKitServo::setServoTurn - set continues rotation mode
 //-----------------------------------------------------------------------------
-// Servo responds but no action??
 //-----------------------------------------------------------------------------
 void uKitServo::setServoTurn(unsigned char id,int dir, int speed)
    {

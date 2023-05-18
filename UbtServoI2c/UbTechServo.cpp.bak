@@ -267,8 +267,8 @@ void uKitServo::setServoAngle(unsigned char id, int angle, int times)
       int TimeMs = times / 20;
       buf[0]= angle + 120;
       buf[1]= TimeMs;
-      buf[2]= 0;
-      buf[3]= 0;
+      buf[2]= (TimeMs & 0xFF00) >> 8;
+      buf[3]= TimeMs  & 0x00FF;
 
       ubtServoActionProtocol(0xFA,id,0x01,buf);
    }
@@ -279,30 +279,24 @@ void uKitServo::setServoAngle(unsigned char id, int angle, int times)
 //-----------------------------------------------------------------------------
 void uKitServo::setServoStop(unsigned char id)
    {
-      unsigned char buf[4]={0xFF,0,0,0};
-      ubtServoProtocol(0xFA,id,0x01,buf);
+      setServoStiffness(id, 255);
    }
 
-//- Stiffnes doesn't seem to work properly.
-//- There seems to be a fix on 16-3-2023, but that uses TXD which has
-//- been lost in my earlier refactoring.
-//- One day, this might be integrated again...
-//- //-----------------------------------------------------------------------------
-//- // uKitServo::setServoStiffness - ?255 = off?  only 4 bytes (of 8) defined...
-//- //-----------------------------------------------------------------------------
-//- // stiffness inequal to 255 enables power and might turn servo to a
-//- // new position...
-//- //-----------------------------------------------------------------------------
-//- void uKitServo::setServoStiffness(unsigned char id, unsigned char stiffness){
-//-   unsigned char tData[4];
-//-   tData[0]=stiffness;
-//-   tData[1]=0;
-//-   tData[2]=0;
-//-   tData[3]=0;
-//-
-//-   //ubtServoActionProtocol(0xFA,id,0x01,tData);
-//-   TXD(0xFA,id,8,0x01,tData ); // 16-3-2023 fix, same message but with 8 bytes of data ?!?
-//- }
+//-----------------------------------------------------------------------------
+// uKitServo::setServoStiffness - ?255 = off?  only 4 bytes (of 8) defined...
+//-----------------------------------------------------------------------------
+// stiffness inequal to 255 enables power and might turn servo to a
+// new position...
+//-----------------------------------------------------------------------------
+void uKitServo::setServoStiffness(unsigned char id, unsigned char stiffness){
+  unsigned char tData[4];
+  tData[0]=stiffness;
+  tData[1]=0;
+  tData[2]=0;
+  tData[3]=0;
+
+  ubtServoActionProtocol(0xFA,id,0x01,tData);
+}
 
 //-----------------------------------------------------------------------------
 // uKitServo::readServoAnglePD - disable servo & read angle
@@ -321,7 +315,10 @@ int uKitServo::readServoAnglePD(unsigned char id)
 
       if (tRet==1) return -120;
 
-      return tRet-120;
+      tCmd=tRet-120;
+      if (tCmd>=-120 && tCmd<=120) return tCmd;
+
+      return 0;
    }
 
 //-----------------------------------------------------------------------------
@@ -335,12 +332,19 @@ int uKitServo::readServoAngleNPD(unsigned char id)
 
       tRet=ubtServoProtocol(0xFA,id,0x03,aa);
 
+      if (tRet==0) {
+         tCmd=0;
+      } else if (tRet==1) {
+         tCmd=-120;
+      } else {
+         tCmd=tRet-120;
+      }
+
       delay(5);
 
-      if (tRet==0) return 0;
-
-      if (tRet==1) return -120;
-
-      return tRet-120;
-
+      if(tCmd>=-120 && tCmd<=120) {
+         return tCmd;
+      } else {
+         return 0;
+      }
    }

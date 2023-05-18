@@ -9,6 +9,10 @@
 
 HardwareSerial Serial2 (PA3, PA2);  // console serial
 
+const int IDENTIFICATION = 185;
+#include "I2cInterface.h"
+#include "I2cSlaveRegisters.h"
+
 // Create UBT serial port
 // * for now stm32f1 specific
 // * hardcoded to Serial1
@@ -22,7 +26,7 @@ HardwareSerial Serial2 (PA3, PA2);  // console serial
 uKitServo UbtServo;
 
 // command-parser
-void Execute();
+void Execute(int Param[]);
 TCommand  Command(Execute);
 
 //---------------------------------------------------------------------------------------
@@ -32,7 +36,7 @@ TCommand  Command(Execute);
 void setup() {
    // start serial
    CSerial.begin(115200);
-   CSerial.printf("Start\n");
+   CSerial.printf("UbtServoI2c starup.\n");
 
    UbtSetup();
    UbtServo.getServoId(9);    // first message always fails, so have that failure now
@@ -40,6 +44,8 @@ void setup() {
 
    pinMode(PB1, OUTPUT);      //Led on Maple-Mini
 
+
+   I2cSlaveRegistersInit(0x98/2);
    CSerial.printf("Startup done.\n");
 }
 
@@ -57,6 +63,47 @@ void loop() {
       BlinkTakt();
    }
 
+   if (RegisterGetByte(R_CMD) != 0) {
+      // a command to process.
+      int Cmd = RegisterGetByte(R_CMD);
+      RegisterSetByte(R_CMD, 0); // clear command
+
+      // execute command
+      switch(Cmd) {
+         case 1 : {  // ServoSetTurn
+            UbtServo.setServoTurn(RegisterGetByte(R_SERVO_ID), RegisterGetByte(R_PARAM0), RegisterGetByte(R_PARAM1));  // id dir speed
+         }
+         break;
+
+         case 2 : {  // ServoSetAngle
+            UbtServo.setServoAngle(RegisterGetByte(R_SERVO_ID), RegisterGetByte(R_PARAM0), 20 * RegisterGetByte(R_PARAM1));
+         }
+         break;
+
+         case 3 : { // ServoSetStop
+            UbtServo.setServoStop(RegisterGetByte(R_SERVO_ID));
+         }
+         break;
+
+         case 4 : {  // ServoSetId
+            UbtServo.setServoId(RegisterGetByte(R_SERVO_ID), RegisterGetByte(R_PARAM0));
+         }
+         break;
+
+         case 5 : { // ServoReadAngle
+            int r = UbtServo.readServoAngleNPD(RegisterGetByte(R_SERVO_ID));
+            RegisterSetWord(R_RET0, r);
+         }
+         break;
+
+         case 6 : { // ServoReadAnglePD
+            int r = UbtServo.readServoAnglePD(RegisterGetByte(R_SERVO_ID));
+            RegisterSetWord(R_RET0, r);
+         }
+         break;
+      }
+   }
+
    Command.Takt(CSerial);  // Console command interpreter
 }
 
@@ -70,7 +117,7 @@ void Execute(int Param[])
    if (Command.Match("?",                 0)) Command.Help("ArduinoPlanck command parser.");
 
    if (Command.Match("ServoSetTurn",      3)) UbtServo.setServoTurn(Param[0], Param[1], Param[2]);  // id dir speed
-   if (Command.Match("ServoSetStif",      2)) UbtServo.setServoStiffness(Param[0], Param[1]);
+//   if (Command.Match("ServoSetStif",      2)) UbtServo.setServoStiffness(Param[0], Param[1]);
    if (Command.Match("ServoSetAngle",     2)) UbtServo.setServoAngle(Param[0], Param[1], 200);
    if (Command.Match("ServoSetAngle",     3)) UbtServo.setServoAngle(Param[0], Param[1], Param[2]);
 
