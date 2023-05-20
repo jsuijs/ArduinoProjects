@@ -216,6 +216,22 @@ void uKitServo::Scan()
    }
 
 //-----------------------------------------------------------------------------
+// uKitServo::ScanNext - return ID's this or next available servo
+//-----------------------------------------------------------------------------
+// Return: Id on success, 256 on failure (no more ID's)
+//-----------------------------------------------------------------------------
+int uKitServo::ScanNext(int InId)
+   {
+      for (int testid=InId; testid<=18; testid++) {
+         if (getServoId(testid) == testid) {
+            return testid;
+         }
+      }
+      return 256;
+   }
+
+
+//-----------------------------------------------------------------------------
 // uKitServo::getServoId - check if servo with Id exists
 //-----------------------------------------------------------------------------
 // Return: Id on success, 0 on failure
@@ -309,7 +325,7 @@ void uKitServo::setServoStop(unsigned char id)
 //-----------------------------------------------------------------------------
 int uKitServo::readServoAnglePD(unsigned char id)
    {
-      int tCmd=0,tRet=0;
+      int tRet=0;
       unsigned char aa[4]={0,0,0,0};
 
       tRet=ubtServoProtocol(0xFA,id,0x02,aa);
@@ -329,7 +345,7 @@ int uKitServo::readServoAnglePD(unsigned char id)
 // Note: no response from old servo, works with ubt-H04
 //-----------------------------------------------------------------------------
 int uKitServo::readServoAngleNPD(unsigned char id)
-   {  int tCmd=0,tRet=0;
+   {  int tRet=0;
       unsigned char aa[4]={0,0,0,0};
 
       tRet=ubtServoProtocol(0xFA,id,0x03,aa);

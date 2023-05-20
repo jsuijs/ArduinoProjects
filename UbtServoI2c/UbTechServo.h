@@ -39,6 +39,7 @@ public:
    unsigned char getServoId1M(char id);
 
    void Scan();
+   int  ScanNext(int InId);
 
    void setServoTurn(unsigned char id,int dir, int speed);      // The steering gear wheel mode control, id is the number of the steering gear, dir is the direction (0 clockwise, 1 counterclockwise), speed is the speed (0-255)）
    //void setServoStiffness(unsigned char id,unsigned char stiffness);

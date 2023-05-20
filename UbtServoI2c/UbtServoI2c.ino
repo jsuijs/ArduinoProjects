@@ -63,8 +63,13 @@ void loop() {
       BlinkTakt();
    }
 
-   if (RegisterGetByte(R_CMD) != 0) {
-      // a command to process.
+   if (I2cNewDataAvailable()) {
+      // NewData, so probably a command to process.
+      CSerial.printf("I2c command %d [%d] (%d %d %d %d)\n",
+        RegisterGetByte(R_CMD), RegisterGetByte(R_SERVO_ID),
+        RegisterGetByte(R_PARAM0), RegisterGetByte(R_PARAM1),
+        RegisterGetByte(R_PARAM2), RegisterGetByte(R_PARAM3)
+      );
       int Cmd = RegisterGetByte(R_CMD);
       RegisterSetByte(R_CMD, 0); // clear command
 
@@ -101,6 +106,13 @@ void loop() {
             RegisterSetWord(R_RET0, r);
          }
          break;
+
+         case 7 : { // ScanNext
+            RegisterSetWord(R_RET0, 257);
+            int r = UbtServo.ScanNext(RegisterGetByte(R_SERVO_ID));
+            RegisterSetWord(R_RET0, r);
+         }
+         break;
       }
    }
 
@@ -129,8 +141,13 @@ void Execute(int Param[])
 
    if (Command.Match("ServoSetId",        2)) CSerial.printf("R: %d\n", (int)UbtServo.setServoId(Param[0], Param[1]));
 
-   if (Command.Match("ServoReadAngle",    1)) printf("Degrees: %d\n", UbtServo.readServoAngleNPD(Param[0]));
-   if (Command.Match("ServoReadAnglePD",  1)) printf("Degrees: %d\n", UbtServo.readServoAnglePD(Param[0]));
+   if (Command.Match("ServoReadAngle",    1)) CSerial.printf("Degrees: %d\n", UbtServo.readServoAngleNPD(Param[0]));
+   if (Command.Match("ServoReadAnglePD",  1)) CSerial.printf("Degrees: %d\n", UbtServo.readServoAnglePD(Param[0]));
+
+   if (Command.Match("I2cDump",        0)) {
+      CSerial.printf("Events Rx: %d, Tx: %d\n", RxEventCounter, TxEventCounter);
+      RegDump();
+   }
 }
 
 //-----------------------------------------------------------------------------
