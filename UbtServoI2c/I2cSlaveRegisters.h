@@ -33,8 +33,8 @@ void I2cRxEvent(int bytesReceived);
 volatile int TxEventCounter;
 volatile int RxEventCounter;
 
-byte I2cRegister[REG_MAP_SIZE];
-bool _I2cNewDataFlag = false;
+volatile byte I2cRegister[REG_MAP_SIZE];
+volatile bool _I2cNewDataFlag = false;
 int I2cAddressPointer = 0;
 
 void HexDump(const void *Data, int Length);
@@ -60,7 +60,7 @@ void I2cSlaveRegistersInit(int Slave)
    SLAVE_WIRE.onRequest(I2cTxEvent);
    SLAVE_WIRE.onReceive(I2cRxEvent);
 
-   memset(I2cRegister, 0, REG_MAP_SIZE);
+   memset((void *)I2cRegister, 0, REG_MAP_SIZE);
 }
 
 //---------------------------------------------------------------------
@@ -167,10 +167,11 @@ void I2cRxEvent(int bytesReceived)
   RxEventCounter++;
 
 // disable print to avoid delay in SEND
-  //  printf("rx 0x%02x 0x%02x\n", bytesReceived, TWSR);
+  //CSerial.printf("rx %d ", bytesReceived);
 
   for (int a = 0; a < bytesReceived; a++) {
     t = SLAVE_WIRE.read();
+//     CSerial.printf("%d ", t);
     if (a == 0) {
       I2cAddressPointer = t;
     }

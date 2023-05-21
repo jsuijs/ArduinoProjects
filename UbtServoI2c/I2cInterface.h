@@ -27,4 +27,4 @@ void RegisterSetWord(int i, int v);
 int  RegisterGetByte(int i);
 void RegisterSetByte(int i, int v);
 
-extern unsigned char I2cRegister[];
+extern volatile unsigned char I2cRegister[];
