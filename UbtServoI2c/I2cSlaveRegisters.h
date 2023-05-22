@@ -33,9 +33,9 @@ void I2cRxEvent(int bytesReceived);
 volatile int TxEventCounter;
 volatile int RxEventCounter;
 
-volatile byte I2cRegister[REG_MAP_SIZE];
-volatile bool _I2cNewDataFlag = false;
-int I2cAddressPointer = 0;
+volatile byte I2cRegister[REG_MAP_SIZE];  // used in rx & tx event handler & @main
+volatile bool _I2cNewDataFlag = false;    // used in rx event handler & @main
+volatile int I2cAddressPointer = 0;       // used in rx & tx event handler
 
 void HexDump(const void *Data, int Length);
 void HexDump(const void *Data, unsigned int Length, unsigned int Offset);
@@ -46,10 +46,13 @@ void HexDump(const void *Data, unsigned int Length, unsigned int Offset);
 //---------------------------------------------------------------------
 bool I2cNewDataAvailable()
 {
+   noInterrupts();
    bool r = _I2cNewDataFlag;
    _I2cNewDataFlag = false;
+   interrupts();
    return r;
 }
+
 //---------------------------------------------------------------------
 // I2cSlaveRegistersInit - Start SLAVE_WIRE & setup interrupt handlers
 //---------------------------------------------------------------------
@@ -173,6 +176,7 @@ void I2cRxEvent(int bytesReceived)
     t = SLAVE_WIRE.read();
 //     CSerial.printf("%d ", t);
     if (a == 0) {
+     //CSerial.printf("%d>", t);
       I2cAddressPointer = t;
     }
     else {
